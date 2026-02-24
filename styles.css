@@ -160,6 +160,16 @@ body::after {
   margin: 6px 0 0;
 }
 
+.menu-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.menu-danger-btn {
+  min-width: 220px;
+}
+
 .mode-grid {
   margin-top: 18px;
   display: grid;
@@ -170,11 +180,14 @@ body::after {
 .mode-card {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border: 1px solid rgba(109, 247, 193, 0.24);
   border-radius: var(--radius-md);
   background: linear-gradient(155deg, rgba(14, 32, 47, 0.95), rgba(9, 21, 35, 0.92));
   color: var(--text-main);
   padding: 16px;
+  min-height: 142px;
   text-align: left;
   cursor: pointer;
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
@@ -197,8 +210,18 @@ body::after {
   background: radial-gradient(circle, rgba(109, 247, 193, 0.3), transparent 70%);
 }
 
-.mode-emoji {
-  font-size: 1.6rem;
+.mode-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ffed8;
+}
+
+.mode-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .mode-name {
@@ -415,6 +438,14 @@ body::after {
   background: rgba(255, 127, 138, 0.14);
 }
 
+.danger-btn:disabled,
+.danger-btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
 .ghost-btn {
   color: var(--text-main);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -479,6 +510,7 @@ body::after {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .final-score {
@@ -576,6 +608,10 @@ body::after {
 }
 
 @media (max-width: 900px) {
+  .mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .country-item {
     grid-template-columns: 1fr;
     align-items: stretch;
@@ -619,12 +655,35 @@ body::after {
     flex-direction: column;
   }
 
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quiz-footer {
+    align-items: stretch;
+  }
+
+  .live-score {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .answer-box {
     grid-template-columns: 1fr;
   }
 
   .type-btn {
     width: 100%;
+  }
+
+  .menu-danger-btn {
+    width: 100%;
+    min-width: 0;
   }
 
   .check-btn {

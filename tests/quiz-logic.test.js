@@ -9,6 +9,13 @@ test("normalizeText retire accents, ponctuation et casse", () => {
   assert.equal(value, "saotomedavila");
 });
 
+test("normalizeTextRelaxed ignore ile/iles et tolere le s final", () => {
+  const value = QuizLogic.normalizeTextRelaxed("Iles Caimans");
+  const valueNoIle = QuizLogic.normalizeTextRelaxed("Caiman");
+  assert.equal(value, "caiman");
+  assert.equal(valueNoIle, "caiman");
+});
+
 test("buildAcceptedAnswers inclut la valeur principale et les alternatives normalisees", () => {
   const answers = QuizLogic.buildAcceptedAnswers("Port-d'Espagne", ["Port of Spain", null, ""]);
   assert.deepEqual(answers, ["portdespagne", "portofspain"]);
@@ -37,6 +44,45 @@ test("isFlagChallengeCorrect exige pays + capitale corrects", () => {
   assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "usa", "washington dc"), true);
   assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "usa", "new york"), false);
   assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "canada", "washington"), false);
+});
+
+test("isCountryAnswerCorrect valide uniquement le pays", () => {
+  const entry = {
+    country: "Palaos (palau)",
+    capital: "Ngerulmud",
+    countryAlternates: ["Palau"],
+  };
+
+  assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palaos"), true);
+  assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palau"), true);
+  assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "fidji"), false);
+});
+
+test("isFlagChallengeCorrect tolere tirets, ile/iles et s final", () => {
+  const entry = {
+    country: "Iles Caimans",
+    capital: "George Town",
+  };
+
+  assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "ile caiman", "george-town"), true);
+});
+
+test("isFlagChallengeCorrect accepte la version courte d'un pays avec parenthese", () => {
+  const entry = {
+    country: "Palaos (palau)",
+    capital: "Ngerulmud",
+  };
+
+  assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "palaos", "ngerulmud"), true);
+});
+
+test("isCapitalAnswerCorrect tolere tiret et s final", () => {
+  const entry = {
+    country: "Grece",
+    capital: "Athenes",
+  };
+
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "athene"), true);
 });
 
 test("shuffleCopy renvoie un nouveau tableau sans muter la source", () => {
@@ -69,6 +115,13 @@ test("buildScopeOptions expose continents + all + random15", () => {
 
   assert.ok(keys.includes(QuizLogic.QUIZ_SCOPE_KEYS.ALL));
   assert.ok(keys.includes(QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15));
+
+  const allOption = options.find((option) => option.key === QuizLogic.QUIZ_SCOPE_KEYS.ALL);
+  const randomOption = options.find(
+    (option) => option.key === QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15
+  );
+  assert.equal(allOption.name, "Tour du Monde");
+  assert.equal(randomOption.name, "Sprint 15");
 });
 
 test("resolveScopeCountries retourne la bonne liste pour un continent", () => {
@@ -120,6 +173,10 @@ test("getRevealText adapte le texte selon le type de quiz", () => {
     QuizLogic.getRevealText("flag-country-capital", entry),
     "Reponse: Argentine - Buenos Aires"
   );
+  assert.equal(
+    QuizLogic.getRevealText("country-only", entry),
+    "Reponse: Argentine"
+  );
 });
 
 test("toggleRevealState bascule visible/masque", () => {
@@ -170,8 +227,17 @@ test("buildSavedErrorsScopeOption construit la carte du mode erreurs", () => {
   const option = QuizLogic.buildSavedErrorsScopeOption(4);
 
   assert.equal(option.key, QuizLogic.QUIZ_SCOPE_KEYS.SAVED_ERRORS);
-  assert.equal(option.name, "Mode Erreurs");
+  assert.equal(option.name, "Revision Ciblee");
   assert.equal(option.countLabel, "4 a corriger");
+  assert.equal(option.iconKey, "savedErrors");
+});
+
+test("formatClearErrorsButtonLabel inclut le compteur si > 0", () => {
+  assert.equal(QuizLogic.formatClearErrorsButtonLabel(0), "Reinitialiser les erreurs");
+  assert.equal(
+    QuizLogic.formatClearErrorsButtonLabel(5),
+    "Reinitialiser les erreurs (5)"
+  );
 });
 
 test("removeCountryFromList retire uniquement le pays corrige", () => {
@@ -196,6 +262,15 @@ test("removeCountryFromList retire uniquement le pays corrige", () => {
 test("getFlagModalPresentation masque le nom en mode drapeau", () => {
   const entry = { country: "Argentine", capital: "Buenos Aires", code: "ar" };
   const presentation = QuizLogic.getFlagModalPresentation("flag-country-capital", entry);
+
+  assert.equal(presentation.showLabel, false);
+  assert.equal(presentation.label, "");
+  assert.equal(presentation.alt, "Drapeau a deviner");
+});
+
+test("getFlagModalPresentation masque aussi le nom en mode pays seulement", () => {
+  const entry = { country: "Argentine", capital: "Buenos Aires", code: "ar" };
+  const presentation = QuizLogic.getFlagModalPresentation("country-only", entry);
 
   assert.equal(presentation.showLabel, false);
   assert.equal(presentation.label, "");

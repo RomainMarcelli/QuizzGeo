@@ -19,32 +19,75 @@
       .replace(/[^a-z0-9]/g, "");
   }
 
+  function normalizeTextRelaxed(text) {
+    const tokens = String(text ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => (token === "iles" ? "ile" : token))
+      .filter((token) => token !== "ile")
+      .map((token) => {
+        if (token.endsWith("s") && token.length > 3) {
+          return token.slice(0, -1);
+        }
+        return token;
+      });
+
+    return tokens.join("");
+  }
+
   function buildAcceptedAnswers(primaryValue, alternates = []) {
     return [primaryValue, ...alternates]
       .map(normalizeText)
       .filter(Boolean);
   }
 
-  function isCapitalAnswerCorrect(countryEntry, userCapital) {
-    const acceptedCapitalAnswers = buildAcceptedAnswers(
-      countryEntry.capital,
-      countryEntry.alternates || []
+  function getAnswerSignatures(value) {
+    const text = String(value ?? "");
+    const withoutParenthetical = text.replace(/\([^)]*\)/g, " ");
+
+    const strict = normalizeText(text);
+    const relaxed = normalizeTextRelaxed(text);
+    const strictNoParen = normalizeText(withoutParenthetical);
+    const relaxedNoParen = normalizeTextRelaxed(withoutParenthetical);
+
+    return Array.from(
+      new Set([strict, relaxed, strictNoParen, relaxedNoParen].filter(Boolean))
     );
-    return acceptedCapitalAnswers.includes(normalizeText(userCapital));
+  }
+
+  function areAnswersEquivalent(userValue, expectedValues) {
+    const userSignatures = getAnswerSignatures(userValue);
+    const expectedSignatures = new Set(
+      expectedValues.flatMap((value) => getAnswerSignatures(value))
+    );
+
+    return userSignatures.some((signature) => expectedSignatures.has(signature));
+  }
+
+  function isCapitalAnswerCorrect(countryEntry, userCapital) {
+    return areAnswersEquivalent(userCapital, [
+      countryEntry.capital,
+      ...(countryEntry.alternates || []),
+    ]);
+  }
+
+  function isCountryAnswerCorrect(countryEntry, userCountry) {
+    return areAnswersEquivalent(userCountry, [
+      countryEntry.country,
+      ...(countryEntry.countryAlternates || []),
+    ]);
   }
 
   function isFlagChallengeCorrect(countryEntry, userCountry, userCapital) {
-    const acceptedCountryAnswers = buildAcceptedAnswers(
-      countryEntry.country,
-      countryEntry.countryAlternates || []
-    );
-    const acceptedCapitalAnswers = buildAcceptedAnswers(
+    const countryIsCorrect = isCountryAnswerCorrect(countryEntry, userCountry);
+    const capitalIsCorrect = areAnswersEquivalent(userCapital, [
       countryEntry.capital,
-      countryEntry.alternates || []
-    );
-
-    const countryIsCorrect = acceptedCountryAnswers.includes(normalizeText(userCountry));
-    const capitalIsCorrect = acceptedCapitalAnswers.includes(normalizeText(userCapital));
+      ...(countryEntry.alternates || []),
+    ]);
     return countryIsCorrect && capitalIsCorrect;
   }
 
@@ -69,7 +112,7 @@
     const regionOptions = Object.entries(quizData).map(([key, mode]) => ({
       key,
       name: mode.name,
-      badge: mode.emoji || key.toUpperCase().slice(0, 2),
+      iconKey: key,
       countLabel: `${mode.countries.length} pays`,
       helper: "Uniquement cette zone",
     }));
@@ -81,17 +124,17 @@
       ...regionOptions,
       {
         key: QUIZ_SCOPE_KEYS.ALL,
-        name: "Tous les pays",
-        badge: "ALL",
+        name: "Tour du Monde",
+        iconKey: "all",
         countLabel: `${allCount} pays`,
-        helper: "Toutes les zones",
+        helper: "Toutes les zones en une session",
       },
       {
         key: QUIZ_SCOPE_KEYS.RANDOM_15,
-        name: `${sampleSize} aleatoires`,
-        badge: String(sampleSize),
+        name: "Sprint 15",
+        iconKey: "random15",
         countLabel: `${sampleSize} questions`,
-        helper: "Melange de toute l'app",
+        helper: "Melange rapide de toute l'app",
       },
     ];
   }
@@ -121,6 +164,9 @@
   function getRevealText(quizType, countryEntry) {
     if (quizType === "flag-country-capital") {
       return `Reponse: ${countryEntry.country} - ${countryEntry.capital}`;
+    }
+    if (quizType === "country-only") {
+      return `Reponse: ${countryEntry.country}`;
     }
     return `Reponse: ${countryEntry.capital}`;
   }
@@ -169,14 +215,21 @@
     return Number(savedCount) > 0;
   }
 
+  function formatClearErrorsButtonLabel(count) {
+    if (count <= 0) {
+      return "Reinitialiser les erreurs";
+    }
+    return `Reinitialiser les erreurs (${count})`;
+  }
+
   function buildSavedErrorsScopeOption(savedCount) {
     const count = Math.max(0, Number(savedCount) || 0);
     return {
       key: QUIZ_SCOPE_KEYS.SAVED_ERRORS,
-      name: "Mode Erreurs",
-      badge: "ERR",
+      name: "Revision Ciblee",
+      iconKey: "savedErrors",
       countLabel: `${count} a corriger`,
-      helper: "Disponible car erreurs sauvegardees",
+      helper: "Rejoue uniquement ce que tu as rate",
     };
   }
 
@@ -188,7 +241,8 @@
   }
 
   function getFlagModalPresentation(quizType, countryEntry) {
-    const isFlagChallenge = quizType === "flag-country-capital";
+    const isFlagChallenge =
+      quizType === "flag-country-capital" || quizType === "country-only";
     if (isFlagChallenge) {
       return {
         alt: "Drapeau a deviner",
@@ -207,7 +261,11 @@
   return {
     QUIZ_SCOPE_KEYS,
     normalizeText,
+    normalizeTextRelaxed,
     buildAcceptedAnswers,
+    getAnswerSignatures,
+    areAnswersEquivalent,
+    isCountryAnswerCorrect,
     isCapitalAnswerCorrect,
     isFlagChallengeCorrect,
     shuffleCopy,
@@ -219,6 +277,7 @@
     getCountryStableKey,
     mergeUniqueCountryLists,
     formatRetryButtonLabel,
+    formatClearErrorsButtonLabel,
     shouldShowSavedErrorActions,
     buildSavedErrorsScopeOption,
     removeCountryFromList,

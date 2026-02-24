@@ -1,5 +1,6 @@
 const QUIZ_TYPES = {
   CAPITAL_ONLY: "capital-only",
+  COUNTRY_ONLY: "country-only",
   FLAG_COUNTRY_CAPITAL: "flag-country-capital",
 };
 
@@ -8,6 +9,7 @@ const ERROR_HISTORY_STORAGE_KEY = "quiz.error.history.v1";
 
 const {
   QUIZ_SCOPE_KEYS,
+  isCountryAnswerCorrect,
   isCapitalAnswerCorrect,
   isFlagChallengeCorrect,
   shuffleCopy,
@@ -17,6 +19,7 @@ const {
   toggleRevealState,
   mergeUniqueCountryLists,
   formatRetryButtonLabel,
+  formatClearErrorsButtonLabel,
   shouldShowSavedErrorActions,
   buildSavedErrorsScopeOption,
   removeCountryFromList,
@@ -49,7 +52,9 @@ const restartBtn = document.getElementById("restartBtn");
 const retryWrongBtn = document.getElementById("retryWrongBtn");
 const clearErrorsBtn = document.getElementById("clearErrorsBtn");
 const backBtn = document.getElementById("backBtn");
+const menuClearErrorsBtn = document.getElementById("menuClearErrorsBtn");
 
+const countryTypeBtn = document.getElementById("countryTypeBtn");
 const capitalTypeBtn = document.getElementById("capitalTypeBtn");
 const flagTypeBtn = document.getElementById("flagTypeBtn");
 const scopeTitle = document.getElementById("scopeTitle");
@@ -72,11 +77,13 @@ function init() {
 }
 
 function attachGlobalEvents() {
-  restartBtn.addEventListener("click", () => startQuiz(fullModeList));
+  restartBtn.addEventListener("click", () => startQuiz(getRestartCountries()));
   retryWrongBtn.addEventListener("click", () => startQuiz(getRetryCountries()));
   clearErrorsBtn.addEventListener("click", clearPersistedErrorHistory);
+  menuClearErrorsBtn.addEventListener("click", clearPersistedErrorHistory);
   backBtn.addEventListener("click", backToMenu);
 
+  countryTypeBtn.addEventListener("click", () => setMenuQuizType(QUIZ_TYPES.COUNTRY_ONLY));
   capitalTypeBtn.addEventListener("click", () => setMenuQuizType(QUIZ_TYPES.CAPITAL_ONLY));
   flagTypeBtn.addEventListener("click", () => setMenuQuizType(QUIZ_TYPES.FLAG_COUNTRY_CAPITAL));
 
@@ -93,18 +100,23 @@ function attachGlobalEvents() {
 function setMenuQuizType(quizType) {
   selectedMenuQuizType = quizType;
 
+  countryTypeBtn.classList.toggle("active", quizType === QUIZ_TYPES.COUNTRY_ONLY);
   capitalTypeBtn.classList.toggle("active", quizType === QUIZ_TYPES.CAPITAL_ONLY);
   flagTypeBtn.classList.toggle("active", quizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL);
 
   scopeTitle.textContent =
-    quizType === QUIZ_TYPES.CAPITAL_ONLY
-      ? "Etape 2: Choisis la zone du quiz des capitales"
-      : "Etape 2: Choisis la zone du mode drapeau";
+    quizType === QUIZ_TYPES.COUNTRY_ONLY
+      ? "Etape 2: Choisis la zone du quiz des pays"
+      : quizType === QUIZ_TYPES.CAPITAL_ONLY
+        ? "Etape 2: Choisis la zone du quiz des capitales"
+        : "Etape 2: Choisis la zone du quiz pays + capitale";
 
   scopeDescription.textContent =
-    quizType === QUIZ_TYPES.CAPITAL_ONLY
-      ? "Tu saisis uniquement la capitale."
-      : "Tu saisis le pays/ile et la capitale a partir du drapeau.";
+    quizType === QUIZ_TYPES.COUNTRY_ONLY
+      ? "Tu saisis uniquement le pays/l'ile a partir du drapeau."
+      : quizType === QUIZ_TYPES.CAPITAL_ONLY
+        ? "Tu saisis uniquement la capitale."
+        : "Tu saisis le pays/l'ile et la capitale a partir du drapeau.";
 
   renderScopeCards();
 }
@@ -119,7 +131,7 @@ function renderScopeCards() {
     button.type = "button";
     button.className = "mode-card";
     button.innerHTML = `
-      <span class="mode-emoji">${option.badge}</span>
+      <span class="mode-icon" aria-hidden="true">${getModeIconSvg(option.iconKey)}</span>
       <span class="mode-name">${option.name}</span>
       <span class="mode-count">${option.countLabel}</span>
       <span class="mode-helper">${option.helper}</span>
@@ -139,7 +151,9 @@ function startMode(quizType, scopeKey) {
       : resolveScopeCountries(QUIZ_DATA, scopeKey, RANDOM_SAMPLE_SIZE);
 
   const scopeOption = getMenuScopeOptions().find((option) => option.key === scopeKey);
-  const quizLabel = quizType === QUIZ_TYPES.CAPITAL_ONLY ? "Capitales" : "Drapeaux";
+  let quizLabel = "Pays + Capitale";
+  if (activeQuizType === QUIZ_TYPES.COUNTRY_ONLY) quizLabel = "Pays";
+  if (activeQuizType === QUIZ_TYPES.CAPITAL_ONLY) quizLabel = "Capitales";
   modeTag.textContent = `${quizLabel} | ${scopeOption ? scopeOption.name : scopeKey}`;
 
   menuSection.classList.add("hidden");
@@ -181,6 +195,8 @@ function renderCountryRows() {
 
     if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
       row.innerHTML = renderFlagChallengeRow(country, index);
+    } else if (activeQuizType === QUIZ_TYPES.COUNTRY_ONLY) {
+      row.innerHTML = renderCountryOnlyRow(country, index);
     } else {
       row.innerHTML = renderCapitalRow(country, index);
     }
@@ -224,6 +240,22 @@ function renderFlagChallengeRow(country, index) {
   `;
 }
 
+function renderCountryOnlyRow(country, index) {
+  return `
+    <div class="country-info challenge-info">
+      <button id="flagbtn-${index}" class="flag-trigger challenge-flag-trigger" type="button" aria-label="Voir ${country.country} en plein ecran">
+        <img class="flag challenge-flag" src="https://flagcdn.com/w160/${country.code}.png" alt="Drapeau inconnu" loading="lazy">
+      </button>
+    </div>
+    <div class="answer-box challenge-answer-box">
+      <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false" ${index === 0 ? "" : "disabled"}>
+      <button id="btn-${index}" class="check-btn" type="button" ${index === 0 ? "" : "disabled"}>OK</button>
+      <button id="reveal-${index}" class="reveal-btn" type="button" ${index === 0 ? "" : "disabled"}>Voir</button>
+      <span id="fb-${index}" class="feedback"></span>
+    </div>
+  `;
+}
+
 function bindRowEvents(index, country) {
   const checkButton = document.getElementById(`btn-${index}`);
   const revealButton = document.getElementById(`reveal-${index}`);
@@ -233,9 +265,8 @@ function bindRowEvents(index, country) {
   revealButton.addEventListener("click", () => revealAnswer(index));
   flagButton.addEventListener("click", () => openFlagModal(country));
 
-  if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+  if (isCountryInputQuizType(activeQuizType)) {
     const countryInput = document.getElementById(`input-country-${index}`);
-    const capitalInput = document.getElementById(`input-capital-${index}`);
 
     countryInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
@@ -243,11 +274,14 @@ function bindRowEvents(index, country) {
       }
     });
 
-    capitalInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        checkAnswer(index);
-      }
-    });
+    if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+      const capitalInput = document.getElementById(`input-capital-${index}`);
+      capitalInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          checkAnswer(index);
+        }
+      });
+    }
   } else {
     const input = document.getElementById(`input-${index}`);
     input.addEventListener("keydown", (event) => {
@@ -261,7 +295,7 @@ function bindRowEvents(index, country) {
 function focusInput(index) {
   highlightActiveRow(index);
 
-  if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+  if (isCountryInputQuizType(activeQuizType)) {
     const input = document.getElementById(`input-country-${index}`);
     if (input) {
       input.focus();
@@ -324,6 +358,26 @@ function checkAnswer(index) {
       wrongAnswers.push(country);
       registerPersistentError(country);
     }
+  } else if (activeQuizType === QUIZ_TYPES.COUNTRY_ONLY) {
+    const countryInput = document.getElementById(`input-country-${index}`);
+    isCorrect = isCountryAnswerCorrect(country, countryInput.value);
+    countryInput.disabled = true;
+
+    if (isCorrect) {
+      score += 1;
+      feedback.textContent = "Correct";
+      feedback.className = "feedback correct";
+      row.classList.add("success");
+      if (activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
+        resolvePersistentError(country);
+      }
+    } else {
+      feedback.textContent = `Faux: ${country.country}`;
+      feedback.className = "feedback wrong";
+      row.classList.add("error");
+      wrongAnswers.push(country);
+      registerPersistentError(country);
+    }
   } else {
     const input = document.getElementById(`input-${index}`);
     isCorrect = isCapitalAnswerCorrect(country, input.value);
@@ -369,9 +423,11 @@ function enableInputsForIndex(index) {
   checkButton.disabled = false;
   revealButton.disabled = false;
 
-  if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+  if (isCountryInputQuizType(activeQuizType)) {
     document.getElementById(`input-country-${index}`).disabled = false;
-    document.getElementById(`input-capital-${index}`).disabled = false;
+    if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+      document.getElementById(`input-capital-${index}`).disabled = false;
+    }
   } else {
     document.getElementById(`input-${index}`).disabled = false;
   }
@@ -397,7 +453,7 @@ function revealAnswer(index) {
     revealedRows.delete(index);
   }
 
-  if (activeQuizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL) {
+  if (isCountryInputQuizType(activeQuizType)) {
     document.getElementById(`input-country-${index}`).focus();
   } else {
     document.getElementById(`input-${index}`).focus();
@@ -515,8 +571,18 @@ function getRetryCountries() {
   return persistedWrongAnswers.map((entry) => ({ ...entry }));
 }
 
+function getRestartCountries() {
+  if (activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
+    return getRetryCountries();
+  }
+  return fullModeList;
+}
+
 function refreshRetryButtonLabel() {
   retryWrongBtn.textContent = formatRetryButtonLabel(persistedWrongAnswers.length);
+  const clearLabel = formatClearErrorsButtonLabel(persistedWrongAnswers.length);
+  clearErrorsBtn.textContent = clearLabel;
+  menuClearErrorsBtn.textContent = clearLabel;
 }
 
 function clearPersistedErrorHistory() {
@@ -531,6 +597,8 @@ function updateSavedErrorActionButtonsVisibility() {
   const shouldShow = shouldShowSavedErrorActions(persistedWrongAnswers.length);
   retryWrongBtn.classList.toggle("hidden", !shouldShow);
   clearErrorsBtn.classList.toggle("hidden", !shouldShow);
+  menuClearErrorsBtn.disabled = !shouldShow;
+  menuClearErrorsBtn.classList.toggle("is-disabled", !shouldShow);
 }
 
 function getMenuScopeOptions() {
@@ -539,6 +607,34 @@ function getMenuScopeOptions() {
     options.push(buildSavedErrorsScopeOption(persistedWrongAnswers.length));
   }
   return options;
+}
+
+function isCountryInputQuizType(quizType) {
+  return (
+    quizType === QUIZ_TYPES.COUNTRY_ONLY ||
+    quizType === QUIZ_TYPES.FLAG_COUNTRY_CAPITAL
+  );
+}
+
+function getModeIconSvg(iconKey) {
+  const icons = {
+    oceania:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M3 15c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 10a3 3 0 1 1 6 0" stroke="currentColor" stroke-width="2"/></svg>',
+    northAmerica:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M6 5l4 2 3-1 3 2-1 4 2 3-2 4-5-1-3 1-2-3 1-4-2-3 2-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+    southAmerica:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M10 4l4 3-1 3 2 3-1 4-3 3-3-2 1-3-2-3 1-4 2-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+    europe:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4l2 3 4 1-2 3 1 4-3 2-2-2-2 2-3-2 1-4-2-3 4-1 2-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+    all:
+      '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M4 12h16M12 4c2 2.2 3 5 3 8s-1 5.8-3 8c-2-2.2-3-5-3-8s1-5.8 3-8z" stroke="currentColor" stroke-width="2"/></svg>',
+    random15:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h5l2 3 2-6 2 10 2-4h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    savedErrors:
+      '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v6c0 4.2-2.5 7.6-8 9-5.5-1.4-8-4.8-8-9V7l8-4z" stroke="currentColor" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+
+  return icons[iconKey] || icons.all;
 }
 
 function launchConfetti() {
