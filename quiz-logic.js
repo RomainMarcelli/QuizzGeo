@@ -69,26 +69,55 @@
   }
 
   function isCapitalAnswerCorrect(countryEntry, userCapital) {
-    return areAnswersEquivalent(userCapital, [
-      countryEntry.capital,
-      ...(countryEntry.alternates || []),
-    ]);
+    const expectedValues = [countryEntry.capital, ...(countryEntry.alternates || [])];
+
+    // Compatibilite historique: des anciennes sessions pouvaient stocker
+    // "Vatican City" comme capitale pour le code "va".
+    if (normalizeText(countryEntry.code) === "va") {
+      expectedValues.push("Vatican", "Vatican City");
+    }
+
+    return areAnswersEquivalent(userCapital, expectedValues);
   }
 
   function isCountryAnswerCorrect(countryEntry, userCountry) {
-    return areAnswersEquivalent(userCountry, [
-      countryEntry.country,
-      ...(countryEntry.countryAlternates || []),
-    ]);
+    const expectedValues = [countryEntry.country, ...(countryEntry.countryAlternates || [])];
+
+    // Compatibilite historique: meme logique que la capitale pour Vatican.
+    if (normalizeText(countryEntry.code) === "va") {
+      expectedValues.push("Vatican");
+    }
+
+    return areAnswersEquivalent(userCountry, expectedValues);
   }
 
   function isFlagChallengeCorrect(countryEntry, userCountry, userCapital) {
     const countryIsCorrect = isCountryAnswerCorrect(countryEntry, userCountry);
-    const capitalIsCorrect = areAnswersEquivalent(userCapital, [
-      countryEntry.capital,
-      ...(countryEntry.alternates || []),
-    ]);
+    const capitalIsCorrect = isCapitalAnswerCorrect(countryEntry, userCapital);
     return countryIsCorrect && capitalIsCorrect;
+  }
+
+  function getFlagChallengeErrorType(countryIsCorrect, capitalIsCorrect) {
+    if (countryIsCorrect && capitalIsCorrect) {
+      return "none";
+    }
+    if (!countryIsCorrect && !capitalIsCorrect) {
+      return "country-and-capital";
+    }
+    if (!countryIsCorrect) {
+      return "country";
+    }
+    return "capital";
+  }
+
+  function formatFlagChallengeWrongFeedback(errorType, countryEntry) {
+    if (errorType === "country") {
+      return `Faux: pays seulement (attendu: ${countryEntry.country})`;
+    }
+    if (errorType === "capital") {
+      return `Faux: capitale seulement (attendu: ${countryEntry.capital})`;
+    }
+    return `Faux: pays + capitale (attendu: ${countryEntry.country} - ${countryEntry.capital})`;
   }
 
   function shuffleCopy(list, randomFn = Math.random) {
@@ -176,8 +205,12 @@
   }
 
   function getCountryStableKey(countryEntry) {
+    const codeKey = normalizeText(countryEntry.code || "");
+    if (codeKey) {
+      return `code:${codeKey}`;
+    }
+
     return [
-      normalizeText(countryEntry.code || ""),
       normalizeText(countryEntry.country || ""),
       normalizeText(countryEntry.capital || ""),
     ].join("|");
@@ -258,6 +291,80 @@
     };
   }
 
+  function getCompletionPercent(answeredCount, totalCount) {
+    const safeTotal = Number(totalCount);
+    if (!Number.isFinite(safeTotal) || safeTotal <= 0) {
+      return 0;
+    }
+
+    const safeAnswered = Number.isFinite(Number(answeredCount))
+      ? Math.max(0, Math.min(Number(answeredCount), safeTotal))
+      : 0;
+
+    return Math.round((safeAnswered / safeTotal) * 100);
+  }
+
+  function getNextUnansweredIndex(answeredIndexes, totalCount, preferredStartIndex = 0) {
+    const safeTotal = Number(totalCount);
+    if (!Number.isInteger(safeTotal) || safeTotal <= 0) {
+      return -1;
+    }
+
+    const answeredSet = new Set(answeredIndexes || []);
+    if (answeredSet.size >= safeTotal) {
+      return -1;
+    }
+
+    const start = Number.isInteger(preferredStartIndex)
+      ? ((preferredStartIndex % safeTotal) + safeTotal) % safeTotal
+      : 0;
+
+    for (let offset = 0; offset < safeTotal; offset += 1) {
+      const candidate = (start + offset) % safeTotal;
+      if (!answeredSet.has(candidate)) {
+        return candidate;
+      }
+    }
+
+    return -1;
+  }
+
+  function alignEntriesWithQuizData(entries, quizData) {
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+
+    const codeToCountry = new Map();
+    getAllCountries(quizData).forEach((entry) => {
+      const codeKey = normalizeText(entry.code || "");
+      if (codeKey && !codeToCountry.has(codeKey)) {
+        codeToCountry.set(codeKey, { ...entry });
+      }
+    });
+
+    return entries
+      .filter((entry) => entry && typeof entry === "object")
+      .map((entry) => {
+        const codeKey = normalizeText(entry.code || "");
+        if (codeKey && codeToCountry.has(codeKey)) {
+          return { ...codeToCountry.get(codeKey) };
+        }
+        return { ...entry };
+      });
+  }
+
+  function resolvePreferredScopeKey(scopeOptions, preferredKey) {
+    if (!Array.isArray(scopeOptions) || scopeOptions.length === 0) {
+      return null;
+    }
+
+    if (scopeOptions.some((option) => option.key === preferredKey)) {
+      return preferredKey;
+    }
+
+    return scopeOptions[0].key;
+  }
+
   return {
     QUIZ_SCOPE_KEYS,
     normalizeText,
@@ -268,6 +375,8 @@
     isCountryAnswerCorrect,
     isCapitalAnswerCorrect,
     isFlagChallengeCorrect,
+    getFlagChallengeErrorType,
+    formatFlagChallengeWrongFeedback,
     shuffleCopy,
     getAllCountries,
     buildScopeOptions,
@@ -282,5 +391,9 @@
     buildSavedErrorsScopeOption,
     removeCountryFromList,
     getFlagModalPresentation,
+    getCompletionPercent,
+    getNextUnansweredIndex,
+    alignEntriesWithQuizData,
+    resolvePreferredScopeKey,
   };
 });

@@ -1,0 +1,103 @@
+@media (max-width: 900px) {
+  .mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .country-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .answer-input {
+    width: 100%;
+  }
+
+  .answer-box {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+  }
+
+  .challenge-answer-box {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto auto auto;
+  }
+
+  .challenge-input {
+    width: 100%;
+  }
+
+  .feedback {
+    min-width: 0;
+    text-align: right;
+  }
+}
+
+@media (max-width: 580px) {
+  body {
+    padding: 14px 10px 24px;
+  }
+
+  .app-shell {
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .quiz-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .quiz-head-right {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quiz-footer {
+    align-items: stretch;
+  }
+
+  .live-score {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .answer-box {
+    grid-template-columns: 1fr;
+  }
+
+  .type-btn {
+    width: 100%;
+  }
+
+  .menu-danger-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .in-quiz-scope-row {
+    width: 100%;
+  }
+
+  .mode-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .check-btn,
+  .reveal-btn,
+  .danger-btn {
+    width: 100%;
+  }
+
+  .feedback {
+    text-align: left;
+  }
+}

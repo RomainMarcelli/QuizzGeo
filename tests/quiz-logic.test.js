@@ -46,6 +46,30 @@ test("isFlagChallengeCorrect exige pays + capitale corrects", () => {
   assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "canada", "washington"), false);
 });
 
+test("getFlagChallengeErrorType identifie correctement le champ en erreur", () => {
+  assert.equal(QuizLogic.getFlagChallengeErrorType(true, true), "none");
+  assert.equal(QuizLogic.getFlagChallengeErrorType(false, true), "country");
+  assert.equal(QuizLogic.getFlagChallengeErrorType(true, false), "capital");
+  assert.equal(QuizLogic.getFlagChallengeErrorType(false, false), "country-and-capital");
+});
+
+test("formatFlagChallengeWrongFeedback detaille le type d'erreur", () => {
+  const entry = { country: "Argentine", capital: "Buenos Aires" };
+
+  assert.equal(
+    QuizLogic.formatFlagChallengeWrongFeedback("country", entry),
+    "Faux: pays seulement (attendu: Argentine)"
+  );
+  assert.equal(
+    QuizLogic.formatFlagChallengeWrongFeedback("capital", entry),
+    "Faux: capitale seulement (attendu: Buenos Aires)"
+  );
+  assert.equal(
+    QuizLogic.formatFlagChallengeWrongFeedback("country-and-capital", entry),
+    "Faux: pays + capitale (attendu: Argentine - Buenos Aires)"
+  );
+});
+
 test("isCountryAnswerCorrect valide uniquement le pays", () => {
   const entry = {
     country: "Palaos (palau)",
@@ -56,6 +80,33 @@ test("isCountryAnswerCorrect valide uniquement le pays", () => {
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palaos"), true);
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palau"), true);
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "fidji"), false);
+});
+
+test("Vatican accepte 'vatican' pour pays et capitale", () => {
+  const entry = QUIZ_DATA.europe.countries.find((country) => country.code === "va");
+  assert.ok(entry);
+
+  assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "vatican"), true);
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "vatican"), true);
+});
+
+test("mode drapeau: Vatican + Vatican est valide", () => {
+  const entry = QUIZ_DATA.europe.countries.find((country) => country.code === "va");
+  assert.ok(entry);
+
+  assert.equal(QuizLogic.isFlagChallengeCorrect(entry, "vatican", "vatican"), true);
+});
+
+test("compatibilite ancienne donnee Vatican City: Vatican reste accepte", () => {
+  const legacyEntry = {
+    country: "Cite du Vatican",
+    capital: "Vatican City",
+    code: "va",
+  };
+
+  assert.equal(QuizLogic.isCountryAnswerCorrect(legacyEntry, "vatican"), true);
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(legacyEntry, "vatican"), true);
+  assert.equal(QuizLogic.isFlagChallengeCorrect(legacyEntry, "vatican", "vatican"), true);
 });
 
 test("isFlagChallengeCorrect tolere tirets, ile/iles et s final", () => {
@@ -124,6 +175,33 @@ test("buildScopeOptions expose continents + all + random15", () => {
   assert.equal(randomOption.name, "Sprint 15");
 });
 
+test("resolvePreferredScopeKey garde la valeur demandee si elle existe", () => {
+  const options = QuizLogic.buildScopeOptions(QUIZ_DATA, 15);
+  const key = QuizLogic.resolvePreferredScopeKey(options, QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15);
+  assert.equal(key, QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15);
+});
+
+test("resolvePreferredScopeKey fallback sur le premier scope si absent", () => {
+  const options = QuizLogic.buildScopeOptions(QUIZ_DATA, 15);
+  const key = QuizLogic.resolvePreferredScopeKey(options, "unknown");
+  assert.equal(key, options[0].key);
+});
+
+test("alignEntriesWithQuizData remplace les libelles par la reference data via code", () => {
+  const legacyEntries = [
+    { country: "Frnace", capital: "Pariss", code: "fr" },
+    { country: "Unknown", capital: "Nowhere", code: "zz" },
+  ];
+
+  const aligned = QuizLogic.alignEntriesWithQuizData(legacyEntries, QUIZ_DATA);
+  const franceRef = QUIZ_DATA.europe.countries.find((entry) => entry.code === "fr");
+
+  assert.equal(aligned[0].country, franceRef.country);
+  assert.equal(aligned[0].capital, franceRef.capital);
+  assert.equal(aligned[1].country, "Unknown");
+  assert.equal(legacyEntries[0].country, "Frnace");
+});
+
 test("resolveScopeCountries retourne la bonne liste pour un continent", () => {
   const oceania = QuizLogic.resolveScopeCountries(QUIZ_DATA, "oceania", 15);
   assert.equal(oceania.length, QUIZ_DATA.oceania.countries.length);
@@ -182,6 +260,28 @@ test("getRevealText adapte le texte selon le type de quiz", () => {
 test("toggleRevealState bascule visible/masque", () => {
   assert.equal(QuizLogic.toggleRevealState(false), true);
   assert.equal(QuizLogic.toggleRevealState(true), false);
+});
+
+test("getCompletionPercent calcule un pourcentage borne", () => {
+  assert.equal(QuizLogic.getCompletionPercent(0, 10), 0);
+  assert.equal(QuizLogic.getCompletionPercent(3, 10), 30);
+  assert.equal(QuizLogic.getCompletionPercent(12, 10), 100);
+  assert.equal(QuizLogic.getCompletionPercent(2, 0), 0);
+});
+
+test("getNextUnansweredIndex retourne la prochaine question libre", () => {
+  const next = QuizLogic.getNextUnansweredIndex(new Set([0, 1, 3]), 5, 2);
+  assert.equal(next, 2);
+});
+
+test("getNextUnansweredIndex fait un wrap quand on arrive a la fin", () => {
+  const next = QuizLogic.getNextUnansweredIndex([0, 1, 2, 4], 5, 5);
+  assert.equal(next, 3);
+});
+
+test("getNextUnansweredIndex retourne -1 si tout est complete", () => {
+  const next = QuizLogic.getNextUnansweredIndex([0, 1, 2], 3, 1);
+  assert.equal(next, -1);
 });
 
 test("mergeUniqueCountryLists fusionne sans doublons", () => {
@@ -257,6 +357,22 @@ test("removeCountryFromList retire uniquement le pays corrige", () => {
     updated.map((entry) => entry.code).sort(),
     ["fr", "it"]
   );
+});
+
+test("removeCountryFromList retire aussi une entree legacy si le code est identique", () => {
+  const list = [
+    { country: "Cite du Vatican", capital: "Vatican City", code: "va" },
+    { country: "France", capital: "Paris", code: "fr" },
+  ];
+
+  const updated = QuizLogic.removeCountryFromList(list, {
+    country: "Cite du Vatican",
+    capital: "Vatican",
+    code: "va",
+  });
+
+  assert.equal(updated.length, 1);
+  assert.equal(updated[0].code, "fr");
 });
 
 test("getFlagModalPresentation masque le nom en mode drapeau", () => {

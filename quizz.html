@@ -51,9 +51,25 @@
     <section id="quizSection" class="quiz-panel hidden" aria-live="polite">
       <div class="quiz-header">
         <button id="backBtn" class="ghost-btn" type="button">Retour au menu</button>
-        <div class="quiz-meta">
-          <span id="modeTag" class="mode-tag"></span>
-          <span id="stepTag" class="step-tag"></span>
+        <div class="quiz-head-right">
+          <button id="toggleModePanelBtn" class="ghost-btn" type="button">Changer de mode</button>
+          <div class="quiz-meta">
+            <span id="modeTag" class="mode-tag"></span>
+            <span id="stepTag" class="step-tag"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="inQuizModePanel" class="in-quiz-mode-panel hidden">
+        <div class="type-picker in-quiz-type-picker">
+          <button id="quickCountryTypeBtn" class="type-btn" type="button">Quiz Pays</button>
+          <button id="quickCapitalTypeBtn" class="type-btn active" type="button">Quiz Capitales</button>
+          <button id="quickFlagTypeBtn" class="type-btn" type="button">Quiz Pays + Capitale</button>
+        </div>
+        <div class="in-quiz-scope-row">
+          <label for="quickScopeSelect">Zone</label>
+          <select id="quickScopeSelect" class="mode-select" aria-label="Choisir la zone"></select>
+          <button id="applyModeBtn" class="secondary-btn" type="button">Appliquer</button>
         </div>
       </div>
 
@@ -89,6 +105,13 @@
 
   <script src="quiz-logic.js" defer></script>
   <script src="data.js" defer></script>
+  <script src="src/js/modules/constants.js" defer></script>
+  <script src="src/js/modules/state.js" defer></script>
+  <script src="src/js/modules/dom.js" defer></script>
+  <script src="src/js/modules/icons.js" defer></script>
+  <script src="src/js/modules/renderers.js" defer></script>
+  <script src="src/js/modules/storage.js" defer></script>
+  <script src="src/js/modules/quiz-app.js" defer></script>
   <script src="app.js" defer></script>
   <script src="pwa.js" defer></script>
 </body>
