@@ -9,6 +9,14 @@
     ALL: "all",
     RANDOM_15: "random15",
     SAVED_ERRORS: "savedErrors",
+    CUSTOM_MIX: "customMix",
+  };
+
+  const MIX_FILTER_KEYS = {
+    OFF: "off",
+    ALL: "all",
+    MAINLAND: "mainland",
+    ISLANDS: "islands",
   };
 
   function normalizeText(text) {
@@ -37,6 +45,15 @@
       });
 
     return tokens.join("");
+  }
+
+  function autoCapitalizeWords(value) {
+    const text = String(value ?? "");
+    return text
+      .toLocaleLowerCase("fr-FR")
+      .replace(/(^|[\s\-'])(\p{L})/gu, (match, separator, letter) => {
+        return `${separator}${letter.toLocaleUpperCase("fr-FR")}`;
+      });
   }
 
   function buildAcceptedAnswers(primaryValue, alternates = []) {
@@ -129,10 +146,32 @@
     return output;
   }
 
+  function getCountryListDedupKey(countryEntry) {
+    const codeKey = normalizeText(countryEntry.code || "");
+    if (codeKey) {
+      return `code:${codeKey}`;
+    }
+
+    return [
+      normalizeText(countryEntry.country || ""),
+      normalizeText(countryEntry.capital || ""),
+    ].join("|");
+  }
+
   function getAllCountries(quizData) {
     const all = [];
+    const seen = new Set();
+
     Object.values(quizData).forEach((mode) => {
-      mode.countries.forEach((country) => all.push({ ...country }));
+      mode.countries.forEach((country) => {
+        const key = getCountryListDedupKey(country);
+        if (seen.has(key)) {
+          return;
+        }
+
+        seen.add(key);
+        all.push({ ...country });
+      });
     });
     return all;
   }
@@ -152,6 +191,13 @@
     return [
       ...regionOptions,
       {
+        key: QUIZ_SCOPE_KEYS.CUSTOM_MIX,
+        name: "Melange Libre",
+        iconKey: "mix",
+        countLabel: "Multi-zones",
+        helper: "Compose tes propres combinaisons",
+      },
+      {
         key: QUIZ_SCOPE_KEYS.ALL,
         name: "Tour du Monde",
         iconKey: "all",
@@ -168,11 +214,112 @@
     ];
   }
 
+  function getIslandCodeSet(quizData) {
+    const islandEntries = quizData?.islands?.countries || [];
+    return new Set(
+      islandEntries
+        .map((entry) => normalizeText(entry.code || ""))
+        .filter(Boolean)
+    );
+  }
+
+  function getCustomMixRegionKeys(quizData) {
+    return Object.keys(quizData).filter((key) => key !== "islands");
+  }
+
+  function buildCustomMixCountries(quizData, regionFilters = {}) {
+    const islandCodeSet = getIslandCodeSet(quizData);
+    const regions = getCustomMixRegionKeys(quizData);
+    const output = [];
+    const seen = new Set();
+
+    regions.forEach((regionKey) => {
+      const mode = quizData[regionKey];
+      if (!mode || !Array.isArray(mode.countries)) {
+        return;
+      }
+
+      const filter = regionFilters[regionKey] || MIX_FILTER_KEYS.OFF;
+      if (filter === MIX_FILTER_KEYS.OFF) {
+        return;
+      }
+
+      mode.countries.forEach((country) => {
+        const codeKey = normalizeText(country.code || "");
+        const isIsland = islandCodeSet.has(codeKey);
+
+        if (filter === MIX_FILTER_KEYS.ISLANDS && !isIsland) {
+          return;
+        }
+        if (filter === MIX_FILTER_KEYS.MAINLAND && isIsland) {
+          return;
+        }
+
+        const dedupKey = getCountryListDedupKey(country);
+        if (seen.has(dedupKey)) {
+          return;
+        }
+
+        seen.add(dedupKey);
+        output.push({ ...country });
+      });
+    });
+
+    return output;
+  }
+
+  function resolveQuestionCountLimit(requestedCount, availableCount) {
+    const total = Number(availableCount);
+    if (!Number.isFinite(total) || total <= 0) {
+      return 0;
+    }
+
+    if (
+      requestedCount === "all" ||
+      requestedCount === null ||
+      requestedCount === undefined ||
+      requestedCount === ""
+    ) {
+      return total;
+    }
+
+    const parsed = Number(requestedCount);
+    if (!Number.isFinite(parsed)) {
+      return total;
+    }
+
+    const normalized = Math.max(1, Math.floor(parsed));
+    return Math.min(normalized, total);
+  }
+
+  function formatQuestionCountSelection(requestedCount, availableCount) {
+    const limit = resolveQuestionCountLimit(requestedCount, availableCount);
+    const total = Number(availableCount);
+
+    if (limit <= 0 || !Number.isFinite(total) || total <= 0) {
+      return "0 question";
+    }
+
+    if (limit === total) {
+      return `Toutes (${limit})`;
+    }
+
+    return `${limit} questions`;
+  }
+
+  function pickQuizCountries(sourceList, requestedCount, randomFn = Math.random) {
+    const list = Array.isArray(sourceList) ? sourceList : [];
+    const shuffled = shuffleCopy(list, randomFn);
+    const limit = resolveQuestionCountLimit(requestedCount, shuffled.length);
+    return shuffled.slice(0, limit);
+  }
+
   function resolveScopeCountries(
     quizData,
     scopeKey,
     randomSampleSize = 15,
-    randomFn = Math.random
+    randomFn = Math.random,
+    options = {}
   ) {
     if (quizData[scopeKey]) {
       return quizData[scopeKey].countries.map((country) => ({ ...country }));
@@ -185,6 +332,10 @@
     if (scopeKey === QUIZ_SCOPE_KEYS.RANDOM_15) {
       const all = getAllCountries(quizData);
       return shuffleCopy(all, randomFn).slice(0, Math.min(randomSampleSize, all.length));
+    }
+
+    if (scopeKey === QUIZ_SCOPE_KEYS.CUSTOM_MIX) {
+      return buildCustomMixCountries(quizData, options.regionFilters || {});
     }
 
     throw new Error(`Unknown scope key: ${scopeKey}`);
@@ -202,6 +353,13 @@
 
   function toggleRevealState(isCurrentlyVisible) {
     return !isCurrentlyVisible;
+  }
+
+  function getPostAnswerButtonState() {
+    return {
+      checkDisabled: true,
+      revealDisabled: false,
+    };
   }
 
   function getCountryStableKey(countryEntry) {
@@ -246,6 +404,18 @@
 
   function shouldShowSavedErrorActions(savedCount) {
     return Number(savedCount) > 0;
+  }
+
+  function shouldGenerateNewRandomSampleOnRestart(scopeKey) {
+    return scopeKey === QUIZ_SCOPE_KEYS.RANDOM_15;
+  }
+
+  function shouldShowPerfectSavedErrorsMenuButton(scopeKey, score, totalCount) {
+    return (
+      scopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS &&
+      Number(totalCount) > 0 &&
+      Number(score) === Number(totalCount)
+    );
   }
 
   function formatClearErrorsButtonLabel(count) {
@@ -367,8 +537,10 @@
 
   return {
     QUIZ_SCOPE_KEYS,
+    MIX_FILTER_KEYS,
     normalizeText,
     normalizeTextRelaxed,
+    autoCapitalizeWords,
     buildAcceptedAnswers,
     getAnswerSignatures,
     areAnswersEquivalent,
@@ -380,14 +552,23 @@
     shuffleCopy,
     getAllCountries,
     buildScopeOptions,
+    getIslandCodeSet,
+    getCustomMixRegionKeys,
+    buildCustomMixCountries,
+    resolveQuestionCountLimit,
+    formatQuestionCountSelection,
+    pickQuizCountries,
     resolveScopeCountries,
     getRevealText,
     toggleRevealState,
+    getPostAnswerButtonState,
     getCountryStableKey,
     mergeUniqueCountryLists,
     formatRetryButtonLabel,
     formatClearErrorsButtonLabel,
     shouldShowSavedErrorActions,
+    shouldGenerateNewRandomSampleOnRestart,
+    shouldShowPerfectSavedErrorsMenuButton,
     buildSavedErrorsScopeOption,
     removeCountryFromList,
     getFlagModalPresentation,

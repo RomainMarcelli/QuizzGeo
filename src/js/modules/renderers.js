@@ -29,6 +29,7 @@
     onReveal,
     onOpenFlag,
     onFocus,
+    onInputChange,
   }) {
     countryList.innerHTML = "";
 
@@ -55,6 +56,7 @@
         onReveal,
         onOpenFlag,
         onFocus,
+        onInputChange,
       });
     });
   }
@@ -68,7 +70,7 @@
         <span class="country-name">${country.country}</span>
       </div>
       <div class="answer-box">
-        <input id="input-${index}" class="answer-input" type="text" placeholder="Capitale" autocomplete="off" spellcheck="false">
+        <input id="input-${index}" class="answer-input" type="text" placeholder="Capitale" autocomplete="off" spellcheck="false" autocapitalize="words">
         <button id="btn-${index}" class="check-btn" type="button">OK</button>
         <button id="reveal-${index}" class="reveal-btn" type="button">Voir</button>
         <span id="fb-${index}" class="feedback"></span>
@@ -84,8 +86,8 @@
         </button>
       </div>
       <div class="answer-box challenge-answer-box">
-        <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false">
-        <input id="input-capital-${index}" class="answer-input challenge-input" type="text" placeholder="Capitale" autocomplete="off" spellcheck="false">
+        <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false" autocapitalize="words">
+        <input id="input-capital-${index}" class="answer-input challenge-input" type="text" placeholder="Capitale" autocomplete="off" spellcheck="false" autocapitalize="words">
         <button id="btn-${index}" class="check-btn" type="button">OK</button>
         <button id="reveal-${index}" class="reveal-btn" type="button">Voir</button>
         <span id="fb-${index}" class="feedback"></span>
@@ -101,7 +103,7 @@
         </button>
       </div>
       <div class="answer-box challenge-answer-box">
-        <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false">
+        <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false" autocapitalize="words">
         <button id="btn-${index}" class="check-btn" type="button">OK</button>
         <button id="reveal-${index}" class="reveal-btn" type="button">Voir</button>
         <span id="fb-${index}" class="feedback"></span>
@@ -118,6 +120,7 @@
     onReveal,
     onOpenFlag,
     onFocus,
+    onInputChange,
   }) {
     const checkButton = document.getElementById(`btn-${index}`);
     const revealButton = document.getElementById(`reveal-${index}`);
@@ -127,37 +130,34 @@
     revealButton.addEventListener("click", () => onReveal(index));
     flagButton.addEventListener("click", () => onOpenFlag(country));
 
+    function bindInputHandlers(inputElement) {
+      inputElement.addEventListener("focus", () => onFocus(index));
+      inputElement.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          onCheck(index);
+        }
+      });
+      if (typeof onInputChange === "function") {
+        inputElement.addEventListener("input", () => onInputChange(inputElement));
+      }
+    }
+
     if (
       activeQuizType === quizTypes.COUNTRY_ONLY ||
       activeQuizType === quizTypes.FLAG_COUNTRY_CAPITAL
     ) {
       const countryInput = document.getElementById(`input-country-${index}`);
-      countryInput.addEventListener("focus", () => onFocus(index));
-      countryInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          onCheck(index);
-        }
-      });
+      bindInputHandlers(countryInput);
 
       if (activeQuizType === quizTypes.FLAG_COUNTRY_CAPITAL) {
         const capitalInput = document.getElementById(`input-capital-${index}`);
-        capitalInput.addEventListener("focus", () => onFocus(index));
-        capitalInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            onCheck(index);
-          }
-        });
+        bindInputHandlers(capitalInput);
       }
       return;
     }
 
     const input = document.getElementById(`input-${index}`);
-    input.addEventListener("focus", () => onFocus(index));
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        onCheck(index);
-      }
-    });
+    bindInputHandlers(input);
   }
 
   modules.renderers = {

@@ -18,7 +18,12 @@
       { country: "Nauru", capital: "Yaren", code: "nr" },
       { country: "Niue", capital: "Alofi", code: "nu" },
       { country: "Nouvelle-calédonie", capital: "Nouméa", code: "nc" },
-      { country: "Nouvelle-zélande", capital: "Wellington", code: "nz" },
+      {
+        country: "Nouvelle-zélande",
+        capital: "Wellington",
+        code: "nz",
+        countryAlternates: ["NZE"],
+      },
       { country: "Palaos (palau)", capital: "Ngerulmud", code: "pw" },
       {country: "Papouasie-nouvelle-guinée", capital: "Port moresby", code: "pg"},
       { country: "Polynésie française", capital: "Papeetē", code: "pf" },
@@ -52,6 +57,7 @@
         capital: "Washington",
         code: "us",
         alternates: ["Washington DC", "Washington D.C."],
+        countryAlternates: ["USA"],
       },
       {
         country: "Grenade",
@@ -104,6 +110,7 @@
         country: "Saint-Christophe-et-Nieves",
         capital: "Basseterre",
         code: "kn",
+        countryAlternates: ["Saint-Christophe", "Saint Christophe"],
       },
       { country: "Saint-Martin (NL)", capital: "Philipsburg", code: "sx" },
       { country: "Saint-Martin (FR)", capital: "Marigot", code: "mf" },
@@ -116,6 +123,7 @@
         country: "Saint-Vincent-et-les-Grenadines",
         capital: "Kingstown",
         code: "vc",
+        countryAlternates: ["Saint-Vincent", "Saint Vincent"],
       },
       { country: "Sainte-Lucie", capital: "Castries", code: "lc" },
       { country: "Salvador", capital: "San Salvador", code: "sv" },
@@ -158,7 +166,7 @@
       { country: "Autriche", capital: "Vienne", code: "at", alternates: ["Vienna"] },
       { country: "Belgique", capital: "Bruxelles", code: "be", alternates: ["Brussels"] },
       { country: "Bielorussie", capital: "Minsk", code: "by" },
-      { country: "Bosnie-Herzegovine", capital: "Sarajevo", code: "ba" },
+      { country: "Bosnie-Herzegovine", countryAlternates: ["Bosnie"], capital: "Sarajevo", code: "ba" },
       { country: "Bulgarie", capital: "Sofia", code: "bg" },
       {
         country: "Cite du Vatican",
@@ -206,11 +214,102 @@
       { country: "Slovaquie", capital: "Bratislava", code: "sk" },
       { country: "Slovenie", capital: "Ljubljana", code: "si" },
       { country: "Suede", capital: "Stockholm", code: "se" },
-      { country: "Suisse", capital: "Bern", code: "ch", alternates: ["Berne"] },
+      { country: "Suisse", capital: "Berne", code: "ch" },
       { country: "Svalbard et Jan Mayen", capital: "Longyearbyen", code: "sj" },
       { country: "Ukraine", capital: "Kiev", code: "ua", alternates: ["Kyiv"] },
     ],
   },
+};
+
+const ISLAND_CODES = [
+  // Oceanie
+  "as",
+  "ck",
+  "fm",
+  "gu",
+  "mh",
+  "mp",
+  "nc",
+  "nf",
+  "nu",
+  "pf",
+  "pn",
+  "tk",
+  "um",
+  "wf",
+  // Amerique du Nord / Caraibes
+  "ai",
+  "ag",
+  "aw",
+  "bb",
+  "bm",
+  "bl",
+  "bq",
+  "bs",
+  "cu",
+  "cw",
+  "dm",
+  "gd",
+  "gl",
+  "gp",
+  "ht",
+  "kn",
+  "ky",
+  "lc",
+  "mf",
+  "mq",
+  "ms",
+  "pm",
+  "pr",
+  "sx",
+  "tc",
+  "tt",
+  "vc",
+  "vg",
+  "vi",
+  // Amerique du Sud
+  "fk",
+  // Europe
+  "ax",
+  "fo",
+  "gg",
+  "im",
+  "je",
+  "sj",
+];
+
+function buildIslandCountries(data, islandCodes) {
+  const codeSet = new Set(islandCodes.map((code) => String(code).toLowerCase()));
+  const byCode = new Map();
+
+  Object.entries(data).forEach(([modeKey, mode]) => {
+    if (!mode || !Array.isArray(mode.countries) || modeKey === "islands") {
+      return;
+    }
+
+    mode.countries.forEach((entry) => {
+      const code = String(entry.code || "").toLowerCase();
+      if (!codeSet.has(code)) {
+        return;
+      }
+
+      if (!byCode.has(code)) {
+        byCode.set(code, { ...entry });
+      }
+    });
+  });
+
+  return Array.from(byCode.values()).sort((a, b) =>
+    String(a.country || "").localeCompare(String(b.country || ""), "fr", {
+      sensitivity: "base",
+    })
+  );
+}
+
+QUIZ_DATA.islands = {
+  name: "Iles",
+  emoji: "🏝️",
+  countries: buildIslandCountries(QUIZ_DATA, ISLAND_CODES),
 };
 
 if (typeof module === "object" && module.exports) {

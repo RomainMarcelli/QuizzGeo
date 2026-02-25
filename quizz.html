@@ -34,12 +34,27 @@
         <button id="flagTypeBtn" class="type-btn" type="button">Quiz Pays + Capitale</button>
       </div>
 
+      <div class="question-count-row">
+        <label for="questionCountSelect">Nombre de questions</label>
+        <select id="questionCountSelect" class="mode-select" aria-label="Nombre de questions"></select>
+      </div>
+
       <div class="scope-head">
         <h3 id="scopeTitle"></h3>
         <p id="scopeDescription"></p>
       </div>
 
       <div id="modeGrid" class="mode-grid"></div>
+
+      <div id="mixConfigPanel" class="mix-config hidden" aria-live="polite">
+        <h3>Etape 3: Compose ton melange</h3>
+        <p>Pour chaque zone, choisis: tout, pays uniquement, iles uniquement, ou ignorer.</p>
+        <div id="mixRegionGrid" class="mix-region-grid"></div>
+        <p id="mixConfigHint" class="mix-config-hint hidden"></p>
+        <div class="mix-config-actions">
+          <button id="startMixBtn" class="primary-btn" type="button">Lancer ce melange</button>
+        </div>
+      </div>
 
       <div class="menu-actions">
         <button id="menuClearErrorsBtn" class="danger-btn menu-danger-btn" type="button">
@@ -52,7 +67,10 @@
       <div class="quiz-header">
         <button id="backBtn" class="ghost-btn" type="button">Retour au menu</button>
         <div class="quiz-head-right">
-          <button id="toggleModePanelBtn" class="ghost-btn" type="button">Changer de mode</button>
+          <div class="quiz-head-actions">
+            <button id="refreshDrawBtn" class="secondary-btn" type="button">Nouveau tirage</button>
+            <button id="toggleModePanelBtn" class="ghost-btn" type="button">Changer de mode</button>
+          </div>
           <div class="quiz-meta">
             <span id="modeTag" class="mode-tag"></span>
             <span id="stepTag" class="step-tag"></span>
@@ -69,6 +87,8 @@
         <div class="in-quiz-scope-row">
           <label for="quickScopeSelect">Zone</label>
           <select id="quickScopeSelect" class="mode-select" aria-label="Choisir la zone"></select>
+          <label for="quickQuestionCountSelect">Nombre</label>
+          <select id="quickQuestionCountSelect" class="mode-select" aria-label="Choisir le nombre de questions"></select>
           <button id="applyModeBtn" class="secondary-btn" type="button">Appliquer</button>
         </div>
       </div>
@@ -84,6 +104,7 @@
         <div class="actions">
           <button id="retryWrongBtn" class="secondary-btn hidden" type="button">Rejouer les erreurs</button>
           <button id="clearErrorsBtn" class="danger-btn hidden" type="button">Vider les erreurs sauvegardees</button>
+          <button id="perfectMenuBtn" class="secondary-btn hidden" type="button">Retour au menu</button>
           <button id="restartBtn" class="primary-btn hidden" type="button">Recommencer</button>
         </div>
       </footer>

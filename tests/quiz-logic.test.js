@@ -16,6 +16,16 @@ test("normalizeTextRelaxed ignore ile/iles et tolere le s final", () => {
   assert.equal(valueNoIle, "caiman");
 });
 
+test("autoCapitalizeWords met une majuscule au debut de chaque mot", () => {
+  const value = QuizLogic.autoCapitalizeWords("saint pierre et miquelon");
+  assert.equal(value, "Saint Pierre Et Miquelon");
+});
+
+test("autoCapitalizeWords gere aussi tirets, apostrophes et accents", () => {
+  const value = QuizLogic.autoCapitalizeWords("cote-d'ivoire et são tomé");
+  assert.equal(value, "Cote-D'Ivoire Et São Tomé");
+});
+
 test("buildAcceptedAnswers inclut la valeur principale et les alternatives normalisees", () => {
   const answers = QuizLogic.buildAcceptedAnswers("Port-d'Espagne", ["Port of Spain", null, ""]);
   assert.deepEqual(answers, ["portdespagne", "portofspain"]);
@@ -80,6 +90,28 @@ test("isCountryAnswerCorrect valide uniquement le pays", () => {
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palaos"), true);
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "palau"), true);
   assert.equal(QuizLogic.isCountryAnswerCorrect(entry, "fidji"), false);
+});
+
+test("isCountryAnswerCorrect accepte les versions courtes de certains pays longs", () => {
+  const saintChristophe = QUIZ_DATA.northAmerica.countries.find((country) => country.code === "kn");
+  const saintVincent = QUIZ_DATA.northAmerica.countries.find((country) => country.code === "vc");
+
+  assert.ok(saintChristophe);
+  assert.ok(saintVincent);
+
+  assert.equal(QuizLogic.isCountryAnswerCorrect(saintChristophe, "saint christophe"), true);
+  assert.equal(QuizLogic.isCountryAnswerCorrect(saintVincent, "saint vincent"), true);
+});
+
+test("isCountryAnswerCorrect accepte USA et NZE", () => {
+  const usa = QUIZ_DATA.northAmerica.countries.find((country) => country.code === "us");
+  const nze = QUIZ_DATA.oceania.countries.find((country) => country.code === "nz");
+
+  assert.ok(usa);
+  assert.ok(nze);
+
+  assert.equal(QuizLogic.isCountryAnswerCorrect(usa, "usa"), true);
+  assert.equal(QuizLogic.isCountryAnswerCorrect(nze, "nze"), true);
 });
 
 test("Vatican accepte 'vatican' pour pays et capitale", () => {
@@ -147,12 +179,14 @@ test("shuffleCopy renvoie un nouveau tableau sans muter la source", () => {
 
 test("getAllCountries combine tous les modes et clone les objets", () => {
   const all = QuizLogic.getAllCountries(QUIZ_DATA);
-  const expectedCount = Object.values(QUIZ_DATA).reduce(
-    (sum, mode) => sum + mode.countries.length,
-    0
+  const uniqueCodes = new Set(
+    Object.values(QUIZ_DATA)
+      .flatMap((mode) => mode.countries)
+      .map((country) => String(country.code || "").toLowerCase())
+      .filter(Boolean)
   );
 
-  assert.equal(all.length, expectedCount);
+  assert.equal(all.length, uniqueCodes.size);
   assert.notEqual(all[0], Object.values(QUIZ_DATA)[0].countries[0]);
 });
 
@@ -166,6 +200,7 @@ test("buildScopeOptions expose continents + all + random15", () => {
 
   assert.ok(keys.includes(QuizLogic.QUIZ_SCOPE_KEYS.ALL));
   assert.ok(keys.includes(QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15));
+  assert.ok(keys.includes(QuizLogic.QUIZ_SCOPE_KEYS.CUSTOM_MIX));
 
   const allOption = options.find((option) => option.key === QuizLogic.QUIZ_SCOPE_KEYS.ALL);
   const randomOption = options.find(
@@ -173,6 +208,50 @@ test("buildScopeOptions expose continents + all + random15", () => {
   );
   assert.equal(allOption.name, "Tour du Monde");
   assert.equal(randomOption.name, "Sprint 15");
+});
+
+test("buildCustomMixCountries permet un melange par zone avec filtres", () => {
+  const filters = {
+    northAmerica: QuizLogic.MIX_FILTER_KEYS.MAINLAND,
+    europe: QuizLogic.MIX_FILTER_KEYS.ISLANDS,
+  };
+  const mixed = QuizLogic.buildCustomMixCountries(QUIZ_DATA, filters);
+  const codes = new Set(mixed.map((entry) => entry.code));
+
+  assert.ok(codes.has("ca"), "Canada attendu (pays NA)");
+  assert.ok(codes.has("ax"), "Aland attendue (ile Europe)");
+  assert.equal(codes.has("bs"), false, "Bahamas ne doit pas etre inclus (ile NA)");
+  assert.equal(codes.has("fr"), false, "France ne doit pas etre incluse (pays Europe)");
+});
+
+test("resolveQuestionCountLimit calcule correctement la limite demandee", () => {
+  assert.equal(QuizLogic.resolveQuestionCountLimit("all", 23), 23);
+  assert.equal(QuizLogic.resolveQuestionCountLimit(10, 23), 10);
+  assert.equal(QuizLogic.resolveQuestionCountLimit(40, 23), 23);
+  assert.equal(QuizLogic.resolveQuestionCountLimit("invalid", 23), 23);
+  assert.equal(QuizLogic.resolveQuestionCountLimit(0, 23), 1);
+  assert.equal(QuizLogic.resolveQuestionCountLimit(10, 0), 0);
+});
+
+test("formatQuestionCountSelection retourne un libelle lisible", () => {
+  assert.equal(QuizLogic.formatQuestionCountSelection("all", 20), "Toutes (20)");
+  assert.equal(QuizLogic.formatQuestionCountSelection(7, 20), "7 questions");
+  assert.equal(QuizLogic.formatQuestionCountSelection(70, 20), "Toutes (20)");
+  assert.equal(QuizLogic.formatQuestionCountSelection(10, 0), "0 question");
+});
+
+test("pickQuizCountries melange puis limite a la quantite demandee", () => {
+  const source = [
+    { country: "A", capital: "A", code: "aa" },
+    { country: "B", capital: "B", code: "bb" },
+    { country: "C", capital: "C", code: "cc" },
+    { country: "D", capital: "D", code: "dd" },
+  ];
+
+  const picked = QuizLogic.pickQuizCountries(source, 2, () => 0.37);
+  assert.equal(picked.length, 2);
+  assert.notEqual(picked, source);
+  assert.deepEqual(source.map((entry) => entry.code), ["aa", "bb", "cc", "dd"]);
 });
 
 test("resolvePreferredScopeKey garde la valeur demandee si elle existe", () => {
@@ -210,12 +289,42 @@ test("resolveScopeCountries retourne la bonne liste pour un continent", () => {
 
 test("resolveScopeCountries retourne tous les pays pour le scope all", () => {
   const all = QuizLogic.resolveScopeCountries(QUIZ_DATA, QuizLogic.QUIZ_SCOPE_KEYS.ALL, 15);
-  const expectedCount = Object.values(QUIZ_DATA).reduce(
-    (sum, mode) => sum + mode.countries.length,
-    0
-  );
+  const expectedCount = new Set(
+    Object.values(QUIZ_DATA)
+      .flatMap((mode) => mode.countries)
+      .map((country) => String(country.code || "").toLowerCase())
+      .filter(Boolean)
+  ).size;
 
   assert.equal(all.length, expectedCount);
+});
+
+test("resolveScopeCountries retourne la liste des iles sur le scope islands", () => {
+  const islands = QuizLogic.resolveScopeCountries(QUIZ_DATA, "islands", 15);
+
+  assert.equal(islands.length, QUIZ_DATA.islands.countries.length);
+  assert.ok(islands.length > 0);
+  assert.notEqual(islands[0], QUIZ_DATA.islands.countries[0]);
+});
+
+test("resolveScopeCountries retourne un melange personnalise sur scope customMix", () => {
+  const custom = QuizLogic.resolveScopeCountries(
+    QUIZ_DATA,
+    QuizLogic.QUIZ_SCOPE_KEYS.CUSTOM_MIX,
+    15,
+    () => 0.25,
+    {
+      regionFilters: {
+        oceania: QuizLogic.MIX_FILTER_KEYS.ALL,
+        europe: QuizLogic.MIX_FILTER_KEYS.MAINLAND,
+      },
+    }
+  );
+
+  const codes = new Set(custom.map((entry) => entry.code));
+  assert.ok(codes.has("au"), "Australie attendue");
+  assert.ok(codes.has("fr"), "France attendue");
+  assert.equal(codes.has("ax"), false, "Aland non attendue (ile Europe)");
 });
 
 test("resolveScopeCountries retourne 15 elements pour random15", () => {
@@ -260,6 +369,12 @@ test("getRevealText adapte le texte selon le type de quiz", () => {
 test("toggleRevealState bascule visible/masque", () => {
   assert.equal(QuizLogic.toggleRevealState(false), true);
   assert.equal(QuizLogic.toggleRevealState(true), false);
+});
+
+test("getPostAnswerButtonState garde 'Voir' actif apres validation", () => {
+  const state = QuizLogic.getPostAnswerButtonState();
+  assert.equal(state.checkDisabled, true);
+  assert.equal(state.revealDisabled, false);
 });
 
 test("getCompletionPercent calcule un pourcentage borne", () => {
@@ -321,6 +436,27 @@ test("shouldShowSavedErrorActions retourne true seulement si compteur > 0", () =
   assert.equal(QuizLogic.shouldShowSavedErrorActions(0), false);
   assert.equal(QuizLogic.shouldShowSavedErrorActions(-1), false);
   assert.equal(QuizLogic.shouldShowSavedErrorActions(1), true);
+});
+
+test("shouldGenerateNewRandomSampleOnRestart true uniquement pour Sprint 15", () => {
+  assert.equal(
+    QuizLogic.shouldGenerateNewRandomSampleOnRestart(QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15),
+    true
+  );
+  assert.equal(QuizLogic.shouldGenerateNewRandomSampleOnRestart(QuizLogic.QUIZ_SCOPE_KEYS.ALL), false);
+  assert.equal(
+    QuizLogic.shouldGenerateNewRandomSampleOnRestart(QuizLogic.QUIZ_SCOPE_KEYS.SAVED_ERRORS),
+    false
+  );
+});
+
+test("shouldShowPerfectSavedErrorsMenuButton true seulement sur mode erreurs avec score parfait", () => {
+  const key = QuizLogic.QUIZ_SCOPE_KEYS.SAVED_ERRORS;
+
+  assert.equal(QuizLogic.shouldShowPerfectSavedErrorsMenuButton(key, 5, 5), true);
+  assert.equal(QuizLogic.shouldShowPerfectSavedErrorsMenuButton(key, 4, 5), false);
+  assert.equal(QuizLogic.shouldShowPerfectSavedErrorsMenuButton("all", 5, 5), false);
+  assert.equal(QuizLogic.shouldShowPerfectSavedErrorsMenuButton(key, 0, 0), false);
 });
 
 test("buildSavedErrorsScopeOption construit la carte du mode erreurs", () => {

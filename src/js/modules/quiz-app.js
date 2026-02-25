@@ -21,23 +21,36 @@
 
     const quizLogic = root.QuizLogic;
     const quizData = root.QUIZ_DATA;
-    const { QUIZ_TYPES, RANDOM_SAMPLE_SIZE, ERROR_HISTORY_STORAGE_KEY } = constants;
+    const {
+      QUIZ_TYPES,
+      RANDOM_SAMPLE_SIZE,
+      QUESTION_COUNT_OPTIONS,
+      ERROR_HISTORY_STORAGE_KEY,
+    } = constants;
 
     const {
       QUIZ_SCOPE_KEYS,
+      MIX_FILTER_KEYS,
+      autoCapitalizeWords,
       isCountryAnswerCorrect,
       isCapitalAnswerCorrect,
       getFlagChallengeErrorType,
       formatFlagChallengeWrongFeedback,
-      shuffleCopy,
       buildScopeOptions,
+      getCustomMixRegionKeys,
+      buildCustomMixCountries,
+      pickQuizCountries,
+      formatQuestionCountSelection,
       resolveScopeCountries,
       getRevealText,
       toggleRevealState,
+      getPostAnswerButtonState,
       mergeUniqueCountryLists,
       formatRetryButtonLabel,
       formatClearErrorsButtonLabel,
       shouldShowSavedErrorActions,
+      shouldGenerateNewRandomSampleOnRestart,
+      shouldShowPerfectSavedErrorsMenuButton,
       buildSavedErrorsScopeOption,
       removeCountryFromList,
       getFlagModalPresentation,
@@ -50,6 +63,7 @@
     const dom = domTools.getDomElements();
     const state = stateTools.createInitialState(QUIZ_TYPES);
     const baseScopeOptions = buildScopeOptions(quizData, RANDOM_SAMPLE_SIZE);
+    const mixRegionKeys = getCustomMixRegionKeys(quizData);
 
     const errorStore = storage.createErrorHistoryStore({
       storageKey: ERROR_HISTORY_STORAGE_KEY,
@@ -59,28 +73,40 @@
     });
     let inQuizSelectedQuizType = QUIZ_TYPES.CAPITAL_ONLY;
     let inQuizSelectedScopeKey = null;
+    let inQuizSelectedQuestionCount = "all";
 
     function init() {
       errorStore.load();
+      ensureSelectedMixFilters();
+      renderQuestionCountSelectOptions();
+      setMenuQuestionCount("all");
       attachGlobalEvents();
       setMenuQuizType(QUIZ_TYPES.CAPITAL_ONLY);
       refreshRetryButtonLabel();
       updateSavedErrorActionButtonsVisibility();
       syncInQuizModeControls(QUIZ_TYPES.CAPITAL_ONLY, null);
+      hideMixConfigPanel();
     }
 
     function attachGlobalEvents() {
       dom.restartBtn.addEventListener("click", () => startQuiz(getRestartCountries()));
+      dom.perfectMenuBtn.addEventListener("click", backToMenu);
       dom.retryWrongBtn.addEventListener("click", () => startQuiz(getRetryCountries()));
       dom.clearErrorsBtn.addEventListener("click", clearPersistedErrorHistory);
       dom.menuClearErrorsBtn.addEventListener("click", clearPersistedErrorHistory);
       dom.backBtn.addEventListener("click", backToMenu);
+      dom.refreshDrawBtn.addEventListener("click", refreshCurrentDraw);
 
       dom.countryTypeBtn.addEventListener("click", () => setMenuQuizType(QUIZ_TYPES.COUNTRY_ONLY));
       dom.capitalTypeBtn.addEventListener("click", () => setMenuQuizType(QUIZ_TYPES.CAPITAL_ONLY));
       dom.flagTypeBtn.addEventListener("click", () =>
         setMenuQuizType(QUIZ_TYPES.FLAG_COUNTRY_CAPITAL)
       );
+      dom.questionCountSelect.addEventListener("change", () => {
+        setMenuQuestionCount(dom.questionCountSelect.value);
+        setInQuizQuestionCount(state.selectedQuestionCount);
+      });
+      dom.startMixBtn.addEventListener("click", startCustomMixMode);
 
       dom.flagModalClose.addEventListener("click", closeFlagModal);
       dom.flagModalBackdrop.addEventListener("click", closeFlagModal);
@@ -97,6 +123,9 @@
       dom.quickScopeSelect.addEventListener("change", () => {
         inQuizSelectedScopeKey = dom.quickScopeSelect.value;
       });
+      dom.quickQuestionCountSelect.addEventListener("change", () => {
+        setInQuizQuestionCount(dom.quickQuestionCountSelect.value);
+      });
       dom.applyModeBtn.addEventListener("click", applyInQuizModeSelection);
 
       document.addEventListener("keydown", (event) => {
@@ -104,6 +133,161 @@
           closeFlagModal();
         }
       });
+    }
+
+    function getQuizLabelForType(quizType) {
+      if (quizType === QUIZ_TYPES.COUNTRY_ONLY) {
+        return "Pays";
+      }
+      if (quizType === QUIZ_TYPES.CAPITAL_ONLY) {
+        return "Capitales";
+      }
+      return "Pays + Capitale";
+    }
+
+    function setModeTag(scopeKey, sourceCount) {
+      const scopeOption = getMenuScopeOptions().find((option) => option.key === scopeKey);
+      const quizLabel = getQuizLabelForType(state.activeQuizType);
+
+      dom.modeTag.textContent = `${quizLabel} | ${
+        scopeOption ? scopeOption.name : scopeKey
+      } | ${formatQuestionCountSelection(state.activeQuestionCount, sourceCount)}`;
+    }
+
+    function resolveSourceListForActiveScope() {
+      if (state.activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
+        return getRetryCountries();
+      }
+
+      if (state.activeScopeKey === QUIZ_SCOPE_KEYS.CUSTOM_MIX) {
+        return buildCustomMixCountries(quizData, state.activeMixFilters);
+      }
+
+      return resolveScopeCountries(quizData, state.activeScopeKey, RANDOM_SAMPLE_SIZE);
+    }
+
+    function refreshCurrentDraw() {
+      if (!state.activeScopeKey) {
+        return;
+      }
+
+      const refreshedSource = resolveSourceListForActiveScope();
+      if (!Array.isArray(refreshedSource) || refreshedSource.length === 0) {
+        backToMenu();
+        return;
+      }
+
+      state.fullModeList = refreshedSource;
+      setModeTag(state.activeScopeKey, refreshedSource.length);
+      startQuiz(refreshedSource);
+    }
+
+    function normalizeQuestionCountValue(value) {
+      const optionValues = new Set(QUESTION_COUNT_OPTIONS.map((option) => String(option)));
+      const normalized = String(value ?? "all");
+      if (optionValues.has(normalized)) {
+        return normalized;
+      }
+      return "all";
+    }
+
+    function formatQuestionCountOptionLabel(value) {
+      if (String(value) === "all") {
+        return "Toutes";
+      }
+      return `${value} questions`;
+    }
+
+    function renderQuestionCountSelectOptions() {
+      const optionsHtml = QUESTION_COUNT_OPTIONS.map(
+        (value) =>
+          `<option value="${value}">${formatQuestionCountOptionLabel(value)}</option>`
+      ).join("");
+
+      dom.questionCountSelect.innerHTML = optionsHtml;
+      dom.quickQuestionCountSelect.innerHTML = optionsHtml;
+    }
+
+    function setMenuQuestionCount(value) {
+      state.selectedQuestionCount = normalizeQuestionCountValue(value);
+      dom.questionCountSelect.value = state.selectedQuestionCount;
+    }
+
+    function setInQuizQuestionCount(value) {
+      inQuizSelectedQuestionCount = normalizeQuestionCountValue(value);
+      dom.quickQuestionCountSelect.value = inQuizSelectedQuestionCount;
+    }
+
+    function createDefaultMixFilters() {
+      const filters = {};
+      mixRegionKeys.forEach((regionKey) => {
+        filters[regionKey] = MIX_FILTER_KEYS.OFF;
+      });
+      return filters;
+    }
+
+    function ensureSelectedMixFilters() {
+      const defaults = createDefaultMixFilters();
+      state.selectedMixFilters = {
+        ...defaults,
+        ...(state.selectedMixFilters || {}),
+      };
+    }
+
+    function clearMixValidationMessage() {
+      dom.mixConfigHint.textContent = "";
+      dom.mixConfigHint.classList.add("hidden");
+    }
+
+    function showMixValidationMessage(message) {
+      dom.mixConfigHint.textContent = message;
+      dom.mixConfigHint.classList.remove("hidden");
+    }
+
+    function renderMixConfigRows() {
+      ensureSelectedMixFilters();
+
+      dom.mixRegionGrid.innerHTML = mixRegionKeys
+        .map(
+          (regionKey) => `
+            <label class="mix-region-row" for="mixFilter-${regionKey}">
+              <span class="mix-region-label">${quizData[regionKey].name}</span>
+              <select id="mixFilter-${regionKey}" data-region="${regionKey}" class="mode-select mix-region-select">
+                <option value="${MIX_FILTER_KEYS.OFF}">Ignorer</option>
+                <option value="${MIX_FILTER_KEYS.ALL}">Tout</option>
+                <option value="${MIX_FILTER_KEYS.MAINLAND}">Pays uniquement</option>
+                <option value="${MIX_FILTER_KEYS.ISLANDS}">Iles uniquement</option>
+              </select>
+            </label>
+          `
+        )
+        .join("");
+
+      dom.mixRegionGrid.querySelectorAll("select[data-region]").forEach((selectElement) => {
+        const regionKey = selectElement.getAttribute("data-region");
+        selectElement.value = state.selectedMixFilters[regionKey] || MIX_FILTER_KEYS.OFF;
+        selectElement.addEventListener("change", () => {
+          state.selectedMixFilters[regionKey] = selectElement.value;
+          clearMixValidationMessage();
+        });
+      });
+    }
+
+    function openMixConfigPanel(keepValidationMessage = false) {
+      if (!keepValidationMessage) {
+        clearMixValidationMessage();
+      }
+      renderMixConfigRows();
+      dom.mixConfigPanel.classList.remove("hidden");
+    }
+
+    function hideMixConfigPanel() {
+      dom.mixConfigPanel.classList.add("hidden");
+      clearMixValidationMessage();
+    }
+
+    function startCustomMixMode() {
+      startMode(state.selectedMenuQuizType, QUIZ_SCOPE_KEYS.CUSTOM_MIX);
     }
 
     function setMenuQuizType(quizType) {
@@ -134,7 +318,15 @@
       renderers.renderScopeCards({
         modeGrid: dom.modeGrid,
         options: getMenuScopeOptions(),
-        onSelectOption: (option) => startMode(state.selectedMenuQuizType, option.key),
+        onSelectOption: (option) => {
+          if (option.key === QUIZ_SCOPE_KEYS.CUSTOM_MIX) {
+            openMixConfigPanel();
+            return;
+          }
+
+          hideMixConfigPanel();
+          startMode(state.selectedMenuQuizType, option.key);
+        },
         getModeIconSvg: icons.getModeIconSvg,
       });
     }
@@ -142,21 +334,29 @@
     function startMode(quizType, scopeKey) {
       state.activeQuizType = quizType;
       state.activeScopeKey = scopeKey;
-      state.fullModeList =
-        scopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS
-          ? getRetryCountries()
-          : resolveScopeCountries(quizData, scopeKey, RANDOM_SAMPLE_SIZE);
+      state.activeQuestionCount = normalizeQuestionCountValue(state.selectedQuestionCount);
 
-      const scopeOption = getMenuScopeOptions().find((option) => option.key === scopeKey);
-      let quizLabel = "Pays + Capitale";
-      if (state.activeQuizType === QUIZ_TYPES.COUNTRY_ONLY) {
-        quizLabel = "Pays";
-      }
-      if (state.activeQuizType === QUIZ_TYPES.CAPITAL_ONLY) {
-        quizLabel = "Capitales";
-      }
-      dom.modeTag.textContent = `${quizLabel} | ${scopeOption ? scopeOption.name : scopeKey}`;
+      if (scopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
+        state.activeMixFilters = {};
+        state.fullModeList = getRetryCountries();
+      } else if (scopeKey === QUIZ_SCOPE_KEYS.CUSTOM_MIX) {
+        ensureSelectedMixFilters();
+        state.activeMixFilters = { ...state.selectedMixFilters };
+        state.fullModeList = buildCustomMixCountries(quizData, state.activeMixFilters);
 
+        if (state.fullModeList.length === 0) {
+          showMixValidationMessage("Selectionne au moins une zone pour lancer le melange.");
+          openMixConfigPanel(true);
+          return;
+        }
+      } else {
+        state.activeMixFilters = {};
+        state.fullModeList = resolveScopeCountries(quizData, scopeKey, RANDOM_SAMPLE_SIZE);
+      }
+
+      setModeTag(scopeKey, state.fullModeList.length);
+
+      hideMixConfigPanel();
       dom.menuSection.classList.add("hidden");
       dom.quizSection.classList.remove("hidden");
       dom.inQuizModePanel.classList.add("hidden");
@@ -170,11 +370,16 @@
         return;
       }
 
-      state.countries = shuffleCopy(sourceList);
+      state.countries = pickQuizCountries(sourceList, state.activeQuestionCount);
+      if (state.countries.length === 0) {
+        backToMenu();
+        return;
+      }
       stateTools.resetQuizSession(state);
 
       dom.finalScore.textContent = "";
       dom.restartBtn.classList.add("hidden");
+      dom.perfectMenuBtn.classList.add("hidden");
       dom.retryWrongBtn.classList.add("hidden");
       dom.clearErrorsBtn.classList.add("hidden");
       refreshRetryButtonLabel();
@@ -195,7 +400,28 @@
         onReveal: revealAnswer,
         onOpenFlag: openFlagModal,
         onFocus: highlightActiveRow,
+        onInputChange: handleInputChange,
       });
+    }
+
+    function handleInputChange(inputElement) {
+      if (!inputElement) {
+        return;
+      }
+
+      const currentValue = inputElement.value;
+      const capitalizedValue = autoCapitalizeWords(currentValue);
+      if (capitalizedValue === currentValue) {
+        return;
+      }
+
+      const selectionStart = inputElement.selectionStart;
+      const selectionEnd = inputElement.selectionEnd;
+      inputElement.value = capitalizedValue;
+
+      if (document.activeElement === inputElement && selectionStart !== null) {
+        inputElement.setSelectionRange(selectionStart, selectionEnd);
+      }
     }
 
     function focusInput(index) {
@@ -246,8 +472,9 @@
         handleCapitalOnlyAnswer(index, country, feedback, row);
       }
 
-      checkButton.disabled = true;
-      revealButton.disabled = true;
+      const postAnswerButtonState = getPostAnswerButtonState();
+      checkButton.disabled = postAnswerButtonState.checkDisabled;
+      revealButton.disabled = postAnswerButtonState.revealDisabled;
 
       state.answeredIndexes.add(index);
       updateProgress();
@@ -280,12 +507,10 @@
 
       if (isCorrect) {
         state.score += 1;
-        feedback.textContent = "Correct";
-        feedback.className = "feedback correct";
+        feedback.textContent = "";
+        feedback.className = "feedback hidden";
         row.classList.add("success");
-        if (state.activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
-          resolvePersistentError(country);
-        }
+        resolvePersistentError(country);
         return;
       }
 
@@ -304,12 +529,10 @@
 
       if (isCorrect) {
         state.score += 1;
-        feedback.textContent = "Correct";
-        feedback.className = "feedback correct";
+        feedback.textContent = "";
+        feedback.className = "feedback hidden";
         row.classList.add("success");
-        if (state.activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
-          resolvePersistentError(country);
-        }
+        resolvePersistentError(country);
         return;
       }
 
@@ -328,12 +551,10 @@
 
       if (isCorrect) {
         state.score += 1;
-        feedback.textContent = "Correct";
-        feedback.className = "feedback correct";
+        feedback.textContent = "";
+        feedback.className = "feedback hidden";
         row.classList.add("success");
-        if (state.activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
-          resolvePersistentError(country);
-        }
+        resolvePersistentError(country);
         return;
       }
 
@@ -398,6 +619,12 @@
       dom.finalScore.textContent = `Score final: ${state.score}/${state.countries.length} (${percent}%)`;
 
       dom.restartBtn.classList.remove("hidden");
+      const showPerfectMenu = shouldShowPerfectSavedErrorsMenuButton(
+        state.activeScopeKey,
+        state.score,
+        state.countries.length
+      );
+      dom.perfectMenuBtn.classList.toggle("hidden", !showPerfectMenu);
       refreshRetryButtonLabel();
       updateSavedErrorActionButtonsVisibility();
 
@@ -412,6 +639,7 @@
       dom.menuSection.classList.remove("hidden");
 
       stateTools.resetToMenu(state, QUIZ_TYPES);
+      hideMixConfigPanel();
       dom.inQuizModePanel.classList.add("hidden");
       syncInQuizModeControls(state.selectedMenuQuizType, state.activeScopeKey);
       renderScopeCards();
@@ -457,6 +685,21 @@
       if (state.activeScopeKey === QUIZ_SCOPE_KEYS.SAVED_ERRORS) {
         return getRetryCountries();
       }
+
+      if (state.activeScopeKey === QUIZ_SCOPE_KEYS.CUSTOM_MIX) {
+        state.fullModeList = buildCustomMixCountries(quizData, state.activeMixFilters);
+        return state.fullModeList;
+      }
+
+      if (shouldGenerateNewRandomSampleOnRestart(state.activeScopeKey)) {
+        state.fullModeList = resolveScopeCountries(
+          quizData,
+          state.activeScopeKey,
+          RANDOM_SAMPLE_SIZE
+        );
+        return state.fullModeList;
+      }
+
       return state.fullModeList;
     }
 
@@ -529,6 +772,7 @@
     function syncInQuizModeControls(preferredQuizType, preferredScopeKey) {
       setInQuizQuizType(preferredQuizType || QUIZ_TYPES.CAPITAL_ONLY);
       renderInQuizScopeOptions(preferredScopeKey);
+      setInQuizQuestionCount(state.selectedQuestionCount);
     }
 
     function applyInQuizModeSelection() {
@@ -536,6 +780,7 @@
         return;
       }
 
+      setMenuQuestionCount(inQuizSelectedQuestionCount);
       setMenuQuizType(inQuizSelectedQuizType);
       dom.inQuizModePanel.classList.add("hidden");
       startMode(inQuizSelectedQuizType, inQuizSelectedScopeKey);

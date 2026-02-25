@@ -26,8 +26,20 @@
   }
 
   .feedback {
+    grid-column: 1 / -1;
     min-width: 0;
     text-align: right;
+  }
+
+  .mix-region-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .mix-region-select {
+    min-width: 0;
+    width: 100%;
   }
 }
 
@@ -49,6 +61,11 @@
   .quiz-head-right {
     width: 100%;
     align-items: flex-start;
+  }
+
+  .quiz-head-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .mode-grid {
@@ -91,6 +108,26 @@
     min-width: 0;
   }
 
+  .question-count-row {
+    width: 100%;
+  }
+
+  .question-count-row label {
+    width: 100%;
+  }
+
+  .mix-config-actions {
+    width: 100%;
+  }
+
+  .mix-config-actions .primary-btn {
+    width: 100%;
+  }
+
+  .mix-region-row {
+    grid-template-columns: 1fr;
+  }
+
   .check-btn,
   .reveal-btn,
   .danger-btn {
@@ -99,5 +136,37 @@
 
   .feedback {
     text-align: left;
+  }
+
+  .flag-modal {
+    padding: 10px;
+  }
+
+  .flag-modal-content {
+    max-height: calc(100vh - 20px);
+    border-radius: 18px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .flag-modal-close {
+    padding: 8px 13px;
+    font-size: 0.92rem;
+  }
+
+  .flag-modal-visual {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .flag-modal-image {
+    max-height: calc(100vh - 170px);
+    border-radius: 10px;
+  }
+
+  .flag-modal-label {
+    max-width: calc(100% - 20px);
+    font-size: 0.98rem;
+    padding: 7px 10px;
   }
 }

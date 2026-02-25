@@ -91,7 +91,7 @@
 .country-item {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   align-items: center;
   padding: 10px 12px;
   border-radius: 12px;
@@ -169,7 +169,10 @@
 .answer-box {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .challenge-answer-box {
@@ -213,6 +216,32 @@
 .mode-select:focus {
   outline: 2px solid rgba(109, 247, 193, 0.4);
   border-color: var(--accent);
+}
+
+.mix-region-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mix-region-label {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.mix-region-select {
+  min-width: 180px;
+}
+
+.mix-config-hint {
+  margin-top: 10px;
+  color: #ffd0d6;
+  font-size: 0.88rem;
 }
 
 .check-btn,
@@ -285,9 +314,15 @@
 }
 
 .feedback {
-  min-width: 125px;
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.83rem;
   color: var(--text-muted);
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .feedback.correct {
@@ -322,65 +357,130 @@
   position: fixed;
   inset: 0;
   z-index: 150;
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 2vw, 28px);
 }
 
 .flag-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(3, 8, 14, 0.78);
-  backdrop-filter: blur(8px);
+  background:
+    radial-gradient(circle at 16% 10%, rgba(109, 247, 193, 0.18), transparent 40%),
+    radial-gradient(circle at 86% 16%, rgba(250, 141, 97, 0.16), transparent 42%),
+    radial-gradient(circle at 80% 86%, rgba(36, 165, 212, 0.14), transparent 42%),
+    linear-gradient(145deg, rgba(4, 10, 17, 0.9), rgba(5, 14, 24, 0.96));
+  backdrop-filter: blur(12px) saturate(125%);
 }
 
 .flag-modal-content {
   position: relative;
   z-index: 1;
-  width: min(1100px, 96vw);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(4, 11, 18, 0.95);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
-  padding: clamp(10px, 2.4vw, 22px);
+  width: min(1240px, 100%);
+  max-height: calc(100vh - clamp(24px, 5vw, 52px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 26px;
+  border: 1px solid rgba(109, 247, 193, 0.32);
+  background:
+    radial-gradient(circle at 92% 0%, rgba(109, 247, 193, 0.08), transparent 38%),
+    linear-gradient(160deg, rgba(7, 17, 28, 0.96), rgba(5, 13, 22, 0.96));
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  padding: clamp(12px, 2vw, 20px);
+  overflow: hidden;
 }
 
 .flag-modal-visual {
   position: relative;
-  margin-top: 12px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 2.6vw, 30px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.08), transparent 38%),
+    linear-gradient(165deg, rgba(12, 25, 39, 0.9), rgba(9, 19, 31, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.flag-modal-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 12px,
+      rgba(255, 255, 255, 0) 12px,
+      rgba(255, 255, 255, 0) 24px
+    );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .flag-modal-close {
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
-  border-radius: 10px;
-  padding: 7px 12px;
-  font-weight: 700;
+  align-self: flex-end;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  color: #f8fbff;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
+}
+
+.flag-modal-close:hover {
+  transform: translateY(-1px);
+  border-color: rgba(109, 247, 193, 0.64);
+  filter: brightness(1.05);
 }
 
 .flag-modal-image {
   display: block;
-  width: 100%;
+  position: relative;
+  z-index: 2;
+  width: auto;
+  max-width: 100%;
+  height: auto;
   max-height: calc(100vh - 230px);
   object-fit: contain;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+  border: 1px solid rgba(8, 18, 29, 0.38);
+  background: #f9fbff;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset,
+    0 0 0 8px rgba(245, 248, 252, 0.08);
+  filter: saturate(1.15) contrast(1.08) brightness(1.03);
 }
 
 .flag-modal-label {
   position: absolute;
-  left: 12px;
-  bottom: 12px;
+  z-index: 3;
+  left: clamp(10px, 1.8vw, 18px);
+  bottom: clamp(10px, 1.8vw, 18px);
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: clamp(1rem, 2vw, 1.4rem);
+  max-width: min(78%, 580px);
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: clamp(1rem, 2vw, 1.35rem);
   font-weight: 800;
-  color: #f7f2d5;
-  background: linear-gradient(90deg, rgba(6, 17, 28, 0.82), rgba(6, 17, 28, 0.3));
-  backdrop-filter: blur(3px);
+  color: #fff6d8;
+  background: linear-gradient(90deg, rgba(6, 15, 25, 0.88), rgba(6, 15, 25, 0.48));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .confetti {

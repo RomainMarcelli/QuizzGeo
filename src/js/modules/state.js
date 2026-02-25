@@ -5,6 +5,10 @@
     return {
       activeQuizType: QUIZ_TYPES.CAPITAL_ONLY,
       selectedMenuQuizType: QUIZ_TYPES.CAPITAL_ONLY,
+      selectedQuestionCount: "all",
+      activeQuestionCount: "all",
+      selectedMixFilters: {},
+      activeMixFilters: {},
       activeScopeKey: null,
       fullModeList: [],
       countries: [],
@@ -24,6 +28,8 @@
 
   function resetToMenu(state, QUIZ_TYPES) {
     state.activeQuizType = QUIZ_TYPES.CAPITAL_ONLY;
+    state.activeQuestionCount = state.selectedQuestionCount || "all";
+    state.activeMixFilters = {};
     state.activeScopeKey = null;
     state.fullModeList = [];
     state.countries = [];
