@@ -196,13 +196,28 @@ if (!JSDOM) {
       assert.ok(antarcticaCard);
       antarcticaCard.click();
 
-      const input = ctx.document.getElementById("input-0");
+      const unknownCapitalCountries = new Set([
+        "Antarctique",
+        "Ile Bouvet",
+        "Iles Heard-et-Macdonald",
+      ]);
+      const rows = Array.from(ctx.document.querySelectorAll(".country-item"));
+      const targetRow = rows.find((row) => {
+        const countryName = row.querySelector(".country-name");
+        return countryName && unknownCapitalCountries.has(countryName.textContent.trim());
+      });
+      assert.ok(targetRow);
+
+      const rowId = targetRow.id || "";
+      const index = Number(rowId.replace("row-", ""));
+      assert.ok(Number.isInteger(index));
+
+      const input = ctx.document.getElementById(`input-${index}`);
       assert.ok(input);
       input.value = "";
-      ctx.document.getElementById("btn-0").click();
+      ctx.document.getElementById(`btn-${index}`).click();
 
-      const row = ctx.document.getElementById("row-0");
-      assert.match(row.className, /success/);
+      assert.match(targetRow.className, /success/);
     } finally {
       ctx.cleanup();
     }
@@ -271,7 +286,7 @@ if (!JSDOM) {
       assert.match(ctx.document.getElementById("stepTag").textContent, /Traitees 0 \//);
       assert.match(
         ctx.document.getElementById("liveScore").textContent,
-        /Bonnes reponses:\s*0/
+        /Traitees\s*0\s*\/\s*\d+/
       );
     } finally {
       ctx.cleanup();

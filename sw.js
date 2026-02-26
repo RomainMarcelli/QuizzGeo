@@ -1,4 +1,4 @@
-const CACHE_NAME = "quiz-drapeau-v20";
+const CACHE_NAME = "quiz-drapeau-v21";
 const APP_ASSETS = [
   "./",
   "./quizz.html",

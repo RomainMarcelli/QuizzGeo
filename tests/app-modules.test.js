@@ -165,6 +165,7 @@ test("dom: mappe correctement les elements attendus", () => {
   const dom = modules.dom.getDomElements(fakeDoc);
   assert.equal(dom.modeGrid, "id:modeGrid");
   assert.equal(dom.progressTrack, "selector:.progress-track");
+  assert.equal(dom.floatingLiveScore, "id:floatingLiveScore");
   assert.equal(dom.refreshDrawBtn, "id:refreshDrawBtn");
   assert.equal(dom.capitalToCountryTypeBtn, "id:capitalToCountryTypeBtn");
   assert.equal(dom.quickCapitalToCountryTypeBtn, "id:quickCapitalToCountryTypeBtn");

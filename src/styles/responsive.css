@@ -80,6 +80,14 @@
     width: 100%;
   }
 
+  .floating-live-score {
+    max-width: calc(100vw - 20px);
+    right: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    font-size: 0.9rem;
+    padding: 8px 11px;
+  }
+
   .actions {
     width: 100%;
     display: grid;

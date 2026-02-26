@@ -11,6 +11,7 @@
       countryList: doc.getElementById("countryList"),
       finalScore: doc.getElementById("finalScore"),
       liveScore: doc.getElementById("liveScore"),
+      floatingLiveScore: doc.getElementById("floatingLiveScore"),
       modeTag: doc.getElementById("modeTag"),
       stepTag: doc.getElementById("stepTag"),
       restartBtn: doc.getElementById("restartBtn"),

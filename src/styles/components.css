@@ -367,6 +367,23 @@
   color: var(--text-muted);
 }
 
+.floating-live-score {
+  position: fixed;
+  right: clamp(12px, 2.2vw, 24px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(12px, 2.2vw, 24px));
+  z-index: 160;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 247, 193, 0.48);
+  background: linear-gradient(150deg, rgba(9, 21, 35, 0.96), rgba(7, 17, 29, 0.96));
+  color: #e9fff5;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  pointer-events: none;
+}
+
 .final-score {
   margin-top: 10px;
   font-size: 1.08rem;

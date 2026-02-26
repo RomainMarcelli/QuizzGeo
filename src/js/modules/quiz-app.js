@@ -92,6 +92,9 @@
       updateSavedErrorActionButtonsVisibility();
       syncInQuizModeControls(QUIZ_TYPES.CAPITAL_ONLY, null);
       hideMixConfigPanel();
+      if (dom.floatingLiveScore) {
+        dom.floatingLiveScore.classList.add("hidden");
+      }
     }
 
     function attachGlobalEvents() {
@@ -481,6 +484,9 @@
       dom.perfectMenuBtn.classList.add("hidden");
       dom.retryWrongBtn.classList.add("hidden");
       dom.clearErrorsBtn.classList.add("hidden");
+      if (dom.floatingLiveScore) {
+        dom.floatingLiveScore.classList.remove("hidden");
+      }
       refreshRetryButtonLabel();
 
       renderCountryRows();
@@ -757,7 +763,11 @@
     }
 
     function updateScoreBadge() {
-      dom.liveScore.textContent = `Bonnes reponses: ${state.score}`;
+      const progressText = `Traitees ${state.answeredIndexes.size} / ${state.countries.length}`;
+      dom.liveScore.textContent = progressText;
+      if (dom.floatingLiveScore) {
+        dom.floatingLiveScore.textContent = progressText;
+      }
     }
 
     function finishQuiz() {
@@ -785,6 +795,9 @@
       closeFlagModal();
       dom.quizSection.classList.add("hidden");
       dom.menuSection.classList.remove("hidden");
+      if (dom.floatingLiveScore) {
+        dom.floatingLiveScore.classList.add("hidden");
+      }
 
       stateTools.resetToMenu(state, QUIZ_TYPES);
       hideMixConfigPanel();
