@@ -11,6 +11,10 @@
         '<svg viewBox="0 0 24 24" fill="none"><path d="M10 4l4 3-1 3 2 3-1 4-3 3-3-2 1-3-2-3 1-4 2-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
       asia:
         '<svg viewBox="0 0 24 24" fill="none"><path d="M5 15c0-4.4 3.6-8 8-8h3l3 3v3c0 4.4-3.6 8-8 8h-3l-3-3v-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11h6M9 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+      antarctica:
+        '<svg viewBox="0 0 24 24" fill="none"><path d="M4 16l4-7 3 5 2-3 4 5H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 6l1-2 1 2m4 1l1-2 1 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+      africa:
+        '<svg viewBox="0 0 24 24" fill="none"><path d="M8 4l4 2 3 3-1 3 2 3-1 4-3 1-4-2-1-4 1-3-1-4 1-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
       europe:
         '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4l2 3 4 1-2 3 1 4-3 2-2-2-2 2-3-2 1-4-2-3 4-1 2-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
       islands:

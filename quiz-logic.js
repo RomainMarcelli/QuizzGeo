@@ -79,6 +79,20 @@
     return expectedValues;
   }
 
+  function isUnknownCapitalValue(value) {
+    const normalized = normalizeText(value);
+    return (
+      normalized === "inconnu" ||
+      normalized === "inconnue" ||
+      normalized === "unknown" ||
+      normalized === "none"
+    );
+  }
+
+  function isUnknownCapitalEntry(countryEntry) {
+    return getExpectedCapitalValues(countryEntry).some((value) => isUnknownCapitalValue(value));
+  }
+
   function buildAcceptedAnswers(primaryValue, alternates = []) {
     return [primaryValue, ...alternates]
       .map(normalizeText)
@@ -109,6 +123,18 @@
   }
 
   function isCapitalAnswerCorrect(countryEntry, userCapital) {
+    if (isUnknownCapitalEntry(countryEntry)) {
+      const normalizedAnswer = normalizeText(userCapital);
+      if (
+        normalizedAnswer === "" ||
+        normalizedAnswer === "non" ||
+        normalizedAnswer === "rien" ||
+        isUnknownCapitalValue(normalizedAnswer)
+      ) {
+        return true;
+      }
+    }
+
     return areAnswersEquivalent(userCapital, getExpectedCapitalValues(countryEntry));
   }
 

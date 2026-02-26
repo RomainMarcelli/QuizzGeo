@@ -186,6 +186,28 @@ if (!JSDOM) {
     }
   });
 
+  test("integration DOM: capitale inconnue accepte une reponse vide", () => {
+    const ctx = setupAppWithDom();
+
+    try {
+      ctx.document.getElementById("capitalTypeBtn").click();
+      const scopeCards = Array.from(ctx.document.querySelectorAll(".mode-card"));
+      const antarcticaCard = scopeCards.find((card) => card.textContent.includes("Antarctique"));
+      assert.ok(antarcticaCard);
+      antarcticaCard.click();
+
+      const input = ctx.document.getElementById("input-0");
+      assert.ok(input);
+      input.value = "";
+      ctx.document.getElementById("btn-0").click();
+
+      const row = ctx.document.getElementById("row-0");
+      assert.match(row.className, /success/);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   test("integration DOM: Sprint 15 permet de filtrer continents et type", () => {
     const ctx = setupAppWithDom();
 

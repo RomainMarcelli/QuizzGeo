@@ -194,6 +194,16 @@ test("isCapitalAnswerCorrect tolere tiret et s final", () => {
   assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "athene"), true);
 });
 
+test("isCapitalAnswerCorrect accepte vide/inconnu/non pour capitale inconnue", () => {
+  const entry = QUIZ_DATA.antarctica.countries.find((country) => country.code === "aq");
+  assert.ok(entry);
+
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, ""), true);
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "inconnu"), true);
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "inconnue"), true);
+  assert.equal(QuizLogic.isCapitalAnswerCorrect(entry, "non"), true);
+});
+
 test("shuffleCopy renvoie un nouveau tableau sans muter la source", () => {
   const source = [1, 2, 3, 4];
   const shuffled = QuizLogic.shuffleCopy(source, () => 0.5);
@@ -337,6 +347,21 @@ test("resolveScopeCountries retourne la bonne liste pour l'Asie", () => {
   assert.ok(asia.some((entry) => entry.code === "af"));
   assert.ok(asia.some((entry) => entry.code === "jp"));
   assert.ok(asia.some((entry) => entry.code === "tr"));
+});
+
+test("resolveScopeCountries retourne la bonne liste pour l'Antarctique", () => {
+  const antarctica = QuizLogic.resolveScopeCountries(QUIZ_DATA, "antarctica", 15);
+  assert.equal(antarctica.length, QUIZ_DATA.antarctica.countries.length);
+  assert.ok(antarctica.some((entry) => entry.code === "aq"));
+  assert.ok(antarctica.some((entry) => entry.code === "tf"));
+});
+
+test("resolveScopeCountries retourne la bonne liste pour l'Afrique", () => {
+  const africa = QuizLogic.resolveScopeCountries(QUIZ_DATA, "africa", 15);
+  assert.equal(africa.length, QUIZ_DATA.africa.countries.length);
+  assert.ok(africa.some((entry) => entry.code === "za"));
+  assert.ok(africa.some((entry) => entry.code === "dz"));
+  assert.ok(africa.some((entry) => entry.code === "yt"));
 });
 
 test("resolveScopeCountries retourne tous les pays pour le scope all", () => {

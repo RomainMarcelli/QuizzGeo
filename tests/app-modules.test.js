@@ -146,6 +146,8 @@ test("icons: retourne une icone valide et fallback sur all", () => {
 
   assert.match(getModeIconSvg("oceania"), /<svg/);
   assert.match(getModeIconSvg("mix"), /<svg/);
+  assert.match(getModeIconSvg("africa"), /<svg/);
+  assert.match(getModeIconSvg("antarctica"), /<svg/);
   assert.equal(getModeIconSvg("unknown-key"), getModeIconSvg("all"));
 });
 
