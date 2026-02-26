@@ -40,6 +40,8 @@
 
       if (activeQuizType === quizTypes.FLAG_COUNTRY_CAPITAL) {
         row.innerHTML = renderFlagChallengeRow(country, index);
+      } else if (activeQuizType === quizTypes.CAPITAL_TO_COUNTRY) {
+        row.innerHTML = renderCapitalToCountryRow(country, index);
       } else if (activeQuizType === quizTypes.COUNTRY_ONLY) {
         row.innerHTML = renderCountryOnlyRow(country, index);
       } else {
@@ -111,6 +113,23 @@
     `;
   }
 
+  function renderCapitalToCountryRow(country, index) {
+    return `
+      <div class="country-info">
+        <div class="capital-clue-card">
+          <span class="capital-clue-label">Capitale</span>
+          <span class="capital-clue-value">${country.capital}</span>
+        </div>
+      </div>
+      <div class="answer-box">
+        <input id="input-country-${index}" class="answer-input challenge-input" type="text" placeholder="Pays / ile" autocomplete="off" spellcheck="false" autocapitalize="words">
+        <button id="btn-${index}" class="check-btn" type="button">OK</button>
+        <button id="reveal-${index}" class="reveal-btn" type="button">Voir</button>
+        <span id="fb-${index}" class="feedback"></span>
+      </div>
+    `;
+  }
+
   function bindRowEvents({
     index,
     country,
@@ -128,7 +147,9 @@
 
     checkButton.addEventListener("click", () => onCheck(index));
     revealButton.addEventListener("click", () => onReveal(index));
-    flagButton.addEventListener("click", () => onOpenFlag(country));
+    if (flagButton) {
+      flagButton.addEventListener("click", () => onOpenFlag(country));
+    }
 
     function bindInputHandlers(inputElement) {
       inputElement.addEventListener("focus", () => onFocus(index));
@@ -144,7 +165,8 @@
 
     if (
       activeQuizType === quizTypes.COUNTRY_ONLY ||
-      activeQuizType === quizTypes.FLAG_COUNTRY_CAPITAL
+      activeQuizType === quizTypes.FLAG_COUNTRY_CAPITAL ||
+      activeQuizType === quizTypes.CAPITAL_TO_COUNTRY
     ) {
       const countryInput = document.getElementById(`input-country-${index}`);
       bindInputHandlers(countryInput);

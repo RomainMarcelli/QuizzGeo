@@ -6,6 +6,7 @@
       CAPITAL_ONLY: "capital-only",
       COUNTRY_ONLY: "country-only",
       FLAG_COUNTRY_CAPITAL: "flag-country-capital",
+      CAPITAL_TO_COUNTRY: "capital-to-country",
     },
     RANDOM_SAMPLE_SIZE: 15,
     QUESTION_COUNT_OPTIONS: ["all", 5, 10, 15, 20, 30, 50],

@@ -114,6 +114,32 @@ test("isCountryAnswerCorrect accepte USA et NZE", () => {
   assert.equal(QuizLogic.isCountryAnswerCorrect(nze, "nze"), true);
 });
 
+test("Capitale -> Pays: accepte tous les pays partageant la meme capitale", () => {
+  const jamaique = QUIZ_DATA.northAmerica.countries.find((country) => country.code === "jm");
+  const ileNorfolk = QUIZ_DATA.oceania.countries.find((country) => country.code === "nf");
+
+  assert.ok(jamaique);
+  assert.ok(ileNorfolk);
+
+  const matchingCountries = QuizLogic.getCountriesMatchingCapital(QUIZ_DATA, jamaique);
+  const matchingCodes = new Set(matchingCountries.map((entry) => entry.code));
+
+  assert.ok(matchingCodes.has("jm"));
+  assert.ok(matchingCodes.has("nf"));
+  assert.equal(
+    QuizLogic.isCountryAnswerCorrectForCapital(QUIZ_DATA, jamaique, "Ile norfolk"),
+    true
+  );
+  assert.equal(
+    QuizLogic.isCountryAnswerCorrectForCapital(QUIZ_DATA, jamaique, "Jamaique"),
+    true
+  );
+  assert.equal(
+    QuizLogic.isCountryAnswerCorrectForCapital(QUIZ_DATA, jamaique, "Canada"),
+    false
+  );
+});
+
 test("Vatican accepte 'vatican' pour pays et capitale", () => {
   const entry = QUIZ_DATA.europe.countries.find((country) => country.code === "va");
   assert.ok(entry);
@@ -224,6 +250,24 @@ test("buildCustomMixCountries permet un melange par zone avec filtres", () => {
   assert.equal(codes.has("fr"), false, "France ne doit pas etre incluse (pays Europe)");
 });
 
+test("hasActiveRegionFilters detecte une selection valide", () => {
+  assert.equal(
+    QuizLogic.hasActiveRegionFilters({
+      northAmerica: QuizLogic.MIX_FILTER_KEYS.OFF,
+      europe: QuizLogic.MIX_FILTER_KEYS.OFF,
+    }),
+    false
+  );
+
+  assert.equal(
+    QuizLogic.hasActiveRegionFilters({
+      northAmerica: QuizLogic.MIX_FILTER_KEYS.MAINLAND,
+      europe: QuizLogic.MIX_FILTER_KEYS.OFF,
+    }),
+    true
+  );
+});
+
 test("resolveQuestionCountLimit calcule correctement la limite demandee", () => {
   assert.equal(QuizLogic.resolveQuestionCountLimit("all", 23), 23);
   assert.equal(QuizLogic.resolveQuestionCountLimit(10, 23), 10);
@@ -287,6 +331,14 @@ test("resolveScopeCountries retourne la bonne liste pour un continent", () => {
   assert.notEqual(oceania[0], QUIZ_DATA.oceania.countries[0]);
 });
 
+test("resolveScopeCountries retourne la bonne liste pour l'Asie", () => {
+  const asia = QuizLogic.resolveScopeCountries(QUIZ_DATA, "asia", 15);
+  assert.equal(asia.length, QUIZ_DATA.asia.countries.length);
+  assert.ok(asia.some((entry) => entry.code === "af"));
+  assert.ok(asia.some((entry) => entry.code === "jp"));
+  assert.ok(asia.some((entry) => entry.code === "tr"));
+});
+
 test("resolveScopeCountries retourne tous les pays pour le scope all", () => {
   const all = QuizLogic.resolveScopeCountries(QUIZ_DATA, QuizLogic.QUIZ_SCOPE_KEYS.ALL, 15);
   const expectedCount = new Set(
@@ -343,6 +395,31 @@ test("resolveScopeCountries retourne 15 elements pour random15", () => {
   }
 });
 
+test("resolveScopeCountries random15 applique les filtres de continents et type", () => {
+  const random = QuizLogic.resolveScopeCountries(
+    QUIZ_DATA,
+    QuizLogic.QUIZ_SCOPE_KEYS.RANDOM_15,
+    15,
+    () => 0.2,
+    {
+      regionFilters: {
+        europe: QuizLogic.MIX_FILTER_KEYS.MAINLAND,
+      },
+    }
+  );
+
+  const allowedCodes = new Set(
+    QUIZ_DATA.europe.countries
+      .filter((entry) => !QUIZ_DATA.islands.countries.some((island) => island.code === entry.code))
+      .map((entry) => entry.code)
+  );
+
+  assert.equal(random.length, 15);
+  random.forEach((entry) => {
+    assert.ok(allowedCodes.has(entry.code), `code non attendu dans sprint filtre: ${entry.code}`);
+  });
+});
+
 test("resolveScopeCountries leve une erreur sur un scope inconnu", () => {
   assert.throws(() => {
     QuizLogic.resolveScopeCountries(QUIZ_DATA, "unknown-scope", 15);
@@ -362,6 +439,10 @@ test("getRevealText adapte le texte selon le type de quiz", () => {
   );
   assert.equal(
     QuizLogic.getRevealText("country-only", entry),
+    "Reponse: Argentine"
+  );
+  assert.equal(
+    QuizLogic.getRevealText("capital-to-country", entry),
     "Reponse: Argentine"
   );
 });

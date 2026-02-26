@@ -166,6 +166,31 @@
   white-space: nowrap;
 }
 
+.capital-clue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(145deg, rgba(18, 39, 56, 0.74), rgba(9, 23, 36, 0.82));
+}
+
+.capital-clue-label {
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.capital-clue-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f5f9ff;
+  word-break: break-word;
+}
+
 .answer-box {
   display: flex;
   align-items: center;

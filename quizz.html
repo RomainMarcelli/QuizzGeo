@@ -32,6 +32,7 @@
         <button id="countryTypeBtn" class="type-btn" type="button">Quiz Pays</button>
         <button id="capitalTypeBtn" class="type-btn active" type="button">Quiz Capitales</button>
         <button id="flagTypeBtn" class="type-btn" type="button">Quiz Pays + Capitale</button>
+        <button id="capitalToCountryTypeBtn" class="type-btn" type="button">Capitale -> Pays</button>
       </div>
 
       <div class="question-count-row">
@@ -47,8 +48,10 @@
       <div id="modeGrid" class="mode-grid"></div>
 
       <div id="mixConfigPanel" class="mix-config hidden" aria-live="polite">
-        <h3>Etape 3: Compose ton melange</h3>
-        <p>Pour chaque zone, choisis: tout, pays uniquement, iles uniquement, ou ignorer.</p>
+        <h3 id="mixConfigTitle">Etape 3: Compose ton melange</h3>
+        <p id="mixConfigDescription">
+          Pour chaque zone, choisis: tout, pays uniquement, iles uniquement, ou ignorer.
+        </p>
         <div id="mixRegionGrid" class="mix-region-grid"></div>
         <p id="mixConfigHint" class="mix-config-hint hidden"></p>
         <div class="mix-config-actions">
@@ -83,6 +86,7 @@
           <button id="quickCountryTypeBtn" class="type-btn" type="button">Quiz Pays</button>
           <button id="quickCapitalTypeBtn" class="type-btn active" type="button">Quiz Capitales</button>
           <button id="quickFlagTypeBtn" class="type-btn" type="button">Quiz Pays + Capitale</button>
+          <button id="quickCapitalToCountryTypeBtn" class="type-btn" type="button">Capitale -> Pays</button>
         </div>
         <div class="in-quiz-scope-row">
           <label for="quickScopeSelect">Zone</label>
