@@ -212,6 +212,7 @@
         code: "io",
       },
       { country: "Thailande", capital: "Bangkok", code: "th" },
+      { country: "Timor oriental", capital: "Dili", code: "tl" },
       { country: "Turkmenistan", capital: "Ashgabat", code: "tm" },
       { country: "Turquie", capital: "Ankara", code: "tr" },
       { country: "Viet Nam", capital: "Hanoi", code: "vn", countryAlternates: ["Vietnam"] },

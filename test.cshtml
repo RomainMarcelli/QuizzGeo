@@ -1,0 +1,34 @@
+<h1 class="fr-h1">Information sur la déclaration</h1>
+
+<nav class="fr-sidemenu" role="navigation" aria-labelledby="sidemenu-title">
+    <div class="fr-sidemenu__inner">
+        <button aria-expanded="false" aria-controls="sidemenu-collapse-2" type="button" class="fr-sidemenu__btn">Dans cette rubrique</button>
+        <div class="fr-collapse" id="sidemenu-collapse-2">
+            <ul class="fr-sidemenu__list">
+                <li class="fr-sidemenu__item">
+                    <a aria-current="page" type="link" id="sidemenu-item-01" href="#" class="fr-sidemenu__link">MonApp- Qu'est ce que c'est ?</a>
+                </li>
+                <li class="fr-sidemenu__item">
+                    <a type="link" id="sidemenu-item-02" href="#" class="fr-sidemenu__link">MonApp- qui est concerné</a>
+                </li>
+                <li class="fr-sidemenu__item">
+                    <a type="link" id="sidemenu-item-03" href="#" class="fr-sidemenu__link">Prérequis techniques</a>
+                </li>
+                <li class="fr-sidemenu__item">
+                    <a type="link" id="sidemenu-item-04" href="#" class="fr-sidemenu__link">Inscription</a>
+                </li>
+                <li class="fr-sidemenu__item">
+                    <a type="link" id="sidemenu-item-05" href="#" class="fr-sidemenu__link">Utilisation</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<script type="text/javascript" src="/scripts/@(HttpContext.Current.Application["JSVer"])/monapp.min.js"></script>
+<script type="module" src="/dsfr/dsfr.module.min.js"></script>
+<script type="text/javascript" nomodule src="/dsfr/dsfr.nomodule.min.js"></script>
+<script src="/js/vue.global.prod.min.js"></script>
+<script src="/js/vuetify.min.js"></script>
+@RenderSection("JsFiles", false)
