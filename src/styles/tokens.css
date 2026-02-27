@@ -1,0 +1,62 @@
+:root {
+  --bg-1: #07131f;
+  --bg-2: #0f2230;
+  --panel: rgba(8, 18, 29, 0.8);
+  --panel-border: rgba(255, 255, 255, 0.12);
+  --text-main: #f6f1e9;
+  --text-muted: #c7d2db;
+  --accent: #6df7c1;
+  --accent-strong: #17d48f;
+  --accent-soft: rgba(109, 247, 193, 0.2);
+  --good: #57f2b8;
+  --bad: #ff7f8a;
+  --shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+  --radius-lg: 24px;
+  --radius-md: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 8% 8%, rgba(109, 247, 193, 0.18), transparent 35%),
+    radial-gradient(circle at 88% 18%, rgba(250, 141, 97, 0.12), transparent 30%),
+    radial-gradient(circle at 75% 90%, rgba(36, 165, 212, 0.16), transparent 30%),
+    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  padding: 28px 14px 40px;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+body::before {
+  width: 240px;
+  height: 240px;
+  background: rgba(255, 157, 105, 0.22);
+  top: -70px;
+  right: -50px;
+}
+
+body::after {
+  width: 220px;
+  height: 220px;
+  background: rgba(109, 247, 193, 0.24);
+  bottom: -60px;
+  left: -70px;
+}

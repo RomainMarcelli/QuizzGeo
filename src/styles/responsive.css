@@ -1,0 +1,180 @@
+@media (max-width: 900px) {
+  .mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .country-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .answer-input {
+    width: 100%;
+  }
+
+  .answer-box {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+  }
+
+  .challenge-answer-box {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto auto auto;
+  }
+
+  .challenge-input {
+    width: 100%;
+  }
+
+  .feedback {
+    grid-column: 1 / -1;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .mix-region-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .mix-region-select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 580px) {
+  body {
+    padding: 14px 10px 24px;
+  }
+
+  .app-shell {
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .quiz-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .quiz-head-right {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .quiz-head-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quiz-footer {
+    align-items: stretch;
+  }
+
+  .live-score {
+    width: 100%;
+  }
+
+  .floating-live-score {
+    max-width: calc(100vw - 20px);
+    right: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    font-size: 0.9rem;
+    padding: 8px 11px;
+  }
+
+  .actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .answer-box {
+    grid-template-columns: 1fr;
+  }
+
+  .type-btn {
+    width: 100%;
+  }
+
+  .menu-danger-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .in-quiz-scope-row {
+    width: 100%;
+  }
+
+  .mode-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .question-count-row {
+    width: 100%;
+  }
+
+  .question-count-row label {
+    width: 100%;
+  }
+
+  .mix-config-actions {
+    width: 100%;
+  }
+
+  .mix-config-actions .primary-btn {
+    width: 100%;
+  }
+
+  .mix-region-row {
+    grid-template-columns: 1fr;
+  }
+
+  .check-btn,
+  .reveal-btn,
+  .danger-btn {
+    width: 100%;
+  }
+
+  .feedback {
+    text-align: left;
+  }
+
+  .flag-modal {
+    padding: 10px;
+  }
+
+  .flag-modal-content {
+    max-height: calc(100vh - 20px);
+    border-radius: 18px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .flag-modal-close {
+    padding: 8px 13px;
+    font-size: 0.92rem;
+  }
+
+  .flag-modal-visual {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .flag-modal-image {
+    max-height: calc(100vh - 170px);
+    border-radius: 10px;
+  }
+
+  .flag-modal-label {
+    max-width: calc(100% - 20px);
+    font-size: 0.98rem;
+    padding: 7px 10px;
+  }
+}
